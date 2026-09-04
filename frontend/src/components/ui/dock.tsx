@@ -172,7 +172,13 @@ function DockItem({ children, className, onClick }: DockItemProps) {
       onClick={onClick}
     >
       {Children.map(children, (child) =>
-        cloneElement(child as React.ReactElement, { width, isHovered })
+        cloneElement(
+          child as React.ReactElement<{
+            width: MotionValue<number>;
+            isHovered: MotionValue<number>;
+          }>,
+          { width, isHovered }
+        )
       )}
     </motion.div>
   );
