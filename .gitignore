@@ -1,0 +1,10 @@
+# Editor / OS junk
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
+*.log
+
+# Freebuff workspace artifacts (logs, run docs)
+.freebuff/
