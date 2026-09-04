@@ -20,9 +20,6 @@ const DEFAULTS = {
 // The top of the Brightness slider drives the shader this far past neutral —
 // the panel reads 0-100%, and the gas is still legible at the top of it.
 const BRIGHTNESS_MAX = 3
-// The still frame the Framer canvas gets — far enough in that the gas has
-// evolved into filaments rather than the smooth noise it starts as.
-const STATIC_TIME = 6
 
 function clamp(n: any, min: number, max: number, fallback: number) {
     const v = typeof n === "number" ? n : parseFloat(n)

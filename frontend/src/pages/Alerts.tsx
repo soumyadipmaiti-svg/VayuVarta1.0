@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { api } from '../api/client';
 import { useLoc } from '../contexts/LocContext';
 import Glass from '../components/Glass';
-import { Bell, BellOff, AlertTriangle, Zap, Plus, X } from 'lucide-react';
+import { BellOff, AlertTriangle, Zap, Plus, X } from 'lucide-react';
 
 const EVENT_TYPES = ['rain', 'heat', 'cold', 'storm', 'wind', 'uv', 'aqi'];
 const sevColor: Record<string, string> = { INFO: 'text-severity-info', WARNING: 'text-severity-warning', CRITICAL: 'text-severity-critical' };

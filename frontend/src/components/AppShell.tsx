@@ -1,5 +1,4 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
-import { useTheme } from '../contexts/ThemeContext';
 import LocationSwitcher from './LocationSwitcher';
 import ThemeToggle from './ThemeToggle';
 import { SignupGate } from './SignupGate';
@@ -50,14 +49,11 @@ const DOCK_ITEMS = [
 
 export default function AppShell() {
   const [page, setPage] = useState('/');
-  const { theme } = useTheme();
-  const isDark = theme === 'dark';
   const Page = PAGES[page] || Dashboard;
 
   // Explorer mode
   const [isExplorer, setIsExplorer] = useState(false);
   const [showGate, setShowGate] = useState(false);
-  const [pendingRoute, setPendingRoute] = useState<string | null>(null);
 
   useEffect(() => {
     setIsExplorer(localStorage.getItem('vayu_explorer') === '1');
@@ -65,7 +61,6 @@ export default function AppShell() {
 
   const handleNav = (path: string) => {
     if (isExplorer && GATED_ROUTES.includes(path)) {
-      setPendingRoute(path);
       setShowGate(true);
       return;
     }
@@ -135,7 +130,7 @@ export default function AppShell() {
       {/* Signup gate modal */}
       <SignupGate
         show={showGate}
-        onClose={() => { setShowGate(false); setPendingRoute(null); }}
+        onClose={() => setShowGate(false)}
         onSignup={handleSignup}
       />
     </div>

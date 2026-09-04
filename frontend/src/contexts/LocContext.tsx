@@ -25,18 +25,6 @@ const LocCtx = createContext<LocCtx>(null!);
 
 // ─── Reverse geocode via Open-Meteo (free, reliable) ─────────────────────────
 async function reverseGeocode(lat: number, lon: number): Promise<string> {
-  // Try Open-Meteo first (already used in the project, reliable)
-  try {
-    const res = await fetch(
-      `https://geocoding-api.open-meteo.com/v1/search?name=&latitude=${lat}&longitude=${lon}&count=1&language=en&format=json`,
-      { signal: AbortSignal.timeout(5000) }
-    );
-    if (res.ok) {
-      const data = await res.json();
-      // Open-Meteo reverse geocode doesn't exist directly, so we use Nominatim as fallback
-    }
-  } catch { /* fall through to Nominatim */ }
-
   // Nominatim — reliable, free, no key needed
   try {
     const res = await fetch(
@@ -128,8 +116,6 @@ export function LocProvider({ children }: { children: ReactNode }) {
   activeIdRef.current = activeId;
   const gpsInitRef = useRef(false);
   const gpsInProgress = useRef(false);
-
-  const isGuest = !user;
 
   // ─── Load saved locations (reads user from ref to avoid stale closure) ───
   const reload = useCallback(async () => {
@@ -307,7 +293,7 @@ export function LocProvider({ children }: { children: ReactNode }) {
     } else {
       // Logged in: try to save fallback to backend
       try {
-        const result = await api.addLocation({
+        await api.addLocation({
           name: FALLBACK_LOCATION.name,
           latitude: FALLBACK_LOCATION.latitude,
           longitude: FALLBACK_LOCATION.longitude,

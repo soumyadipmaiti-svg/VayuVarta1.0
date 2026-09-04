@@ -1,12 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { api } from '../api/client';
 import { useLoc } from '../contexts/LocContext';
-import { useTheme } from '../contexts/ThemeContext';
-
 import { AnimatedAIChat } from '../components/ui/animated-ai-chat';
 import { Spotlight } from '../components/ui/spotlight';
 import {
-  Cloud, MapPin, Mic, Sun, Wind, Plus, MessageSquare, Trash2, Clock,
+  MapPin, Mic, Plus, MessageSquare, Trash2, Clock,
 } from 'lucide-react';
 import CosmicBG from '../components/ui/cosmic-bg';
 import StarfieldBg from '../components/ui/starfield-bg';
@@ -39,27 +37,6 @@ const WEATHER_TIPS = [
   { icon: '💨', text: 'Wind & humidity' },
   { icon: '☀️', text: 'UV & sun safety' },
 ];
-
-const VOICE_LANGUAGES = [
-  { code: 'bn-BD', label: 'বাংলা' },
-  { code: 'hi-IN', label: 'हिन्दी' },
-  { code: 'en-US', label: 'English' },
-  { code: 'ta-IN', label: 'தமிழ்' },
-  { code: 'te-IN', label: 'తెలుగు' },
-];
-
-/** Detect if text is Bengali (Unicode or romanized Banglish) */
-function isBengaliText(text: string): boolean {
-  if (!text) return false;
-  // Check for Bengali Unicode characters
-  const bengaliChars = (text.match(/[\u0980-\u09FF]/g) || []).length;
-  if (bengaliChars > text.length * 0.1) return true;
-  // Check for common Banglish words
-  const banglish = ['ami', 'tumi', 'kemon', 'ache', 'kothay', 'jai', 'khete', 'pani', 'bristi', 'mausam', 'gorom', 'thanda', 'bhalo', 'kharap', 'aschi', 'jacchi', 'korbo', 'hobe', 'ekhane', 'dupur', 'shokal', 'bikel', 'bolte', 'parbo', 'janina', 'sundi', 'bheeshon', 'khub', 'onek', 'ektu', 'shaon', 'nongor', 'mosla', 'bhat', 'mach', 'torkari', 'baarish', 'ghumiye', 'ghum', 'diner', 'raat', 'sokale', 'bikeler', 'phire', 'aaste', 'dharun', 'bujhte', 'parbo', 'laglo', 'lagche', 'hobe', 'hobena', 'korchhi', 'korchi', 'jachhi', 'jacchi', 'khabo', 'kheye', 'jaoya', 'nera', 'kora', 'kore', 'diye', 'niye'];
-  const words = text.toLowerCase().split(/\s+/);
-  const matches = words.filter(w => banglish.includes(w)).length;
-  return matches >= 2;
-}
 
 const STORAGE_KEY = 'vayugpt_conversations';
 
@@ -104,7 +81,6 @@ function timeAgo(dateStr: string): string {
 
 export default function Assistant() {
   const { activeId } = useLoc();
-  const { theme } = useTheme();
   const [sending, setSending] = useState(false);
   const [showPills, setShowPills] = useState(false);
   const [voiceLang, setVoiceLang] = useState('en-US');
@@ -275,8 +251,6 @@ export default function Assistant() {
     }
     setSending(false);
   }, [input, activeId, activeConvoId, readAloud, ttsSupported, speak, updateMessages]);
-
-  const isLight = theme === 'light';
 
   // ── No location → Hero Landing ──────────────────────────────────────────
   if (!activeId) {

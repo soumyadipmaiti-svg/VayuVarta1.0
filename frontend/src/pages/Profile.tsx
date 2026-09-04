@@ -7,7 +7,7 @@ import { SplineScene } from '../components/ui/splite';
 import { Card } from '../components/ui/card';
 import {
   LogOut, Cloud, Sun, Camera, Phone, MessageCircle,
-  Shield, CheckCircle, X, Loader2, Save, User, Siren,
+  Shield, CheckCircle, X, Loader2, Save, Siren,
 } from 'lucide-react';
 
 // ─── Profile Picture Component ─────────────────────────────────────────

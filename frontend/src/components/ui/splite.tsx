@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, lazy, useRef, useEffect, useCallback, useState, Component, type ReactNode } from 'react'
+import { Suspense, lazy, useRef, useEffect, useCallback, Component, type ReactNode } from 'react'
 
 // Lazy load Spline — only loaded when component mounts
 const Spline = lazy(() => import('@splinetool/react-spline'))
@@ -127,18 +127,9 @@ interface SplineSceneProps {
 // ─── Component ─────────────────────────────────────────────────────────
 export function SplineScene({ scene, className }: SplineSceneProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [loadFailed, setLoadFailed] = useState(false);
 
   // RAF-throttled mouse forwarding to Spline
   useSplineMouse(containerRef);
-
-  if (loadFailed) {
-    return (
-      <div className={`flex items-center justify-center ${className ?? ''}`}>
-        <div className="text-white/20 text-xs">3D unavailable</div>
-      </div>
-    );
-  }
 
   return (
     <div

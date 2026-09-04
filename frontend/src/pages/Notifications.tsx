@@ -7,14 +7,9 @@ export default function Notifications() {
   const [minSeverity, setMinSeverity] = useState('WARNING');
   const [briefingTime, setBriefingTime] = useState('');
 
-  const [msg, setMsg] = useState('');
-
-  const flash = (m: string) => { setMsg(m); setTimeout(() => setMsg(''), 3000); };
-
   return (
     <div className="page-enter h-full overflow-y-auto no-scrollbar p-6 space-y-6">
       <h1 className="text-2xl font-bold text-ice-50">Notification Settings</h1>
-      {msg && <div className="text-sm text-accent-400 bg-accent-500/10 px-4 py-2 rounded-xl">{msg}</div>}
 
       {/* Push Notifications */}
       <Glass className="p-5">

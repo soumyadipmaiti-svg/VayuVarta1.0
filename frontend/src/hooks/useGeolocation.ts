@@ -63,11 +63,8 @@ export interface UseGeolocationOptions {
 
 async function reverseGeocode(lat: number, lon: number): Promise<ReverseGeocode | null> {
   try {
-    // Open-Meteo geocoding API — search nearby
-    const url = `https://geocoding-api.open-meteo.com/v1/search?name=&latitude=${lat}&longitude=${lon}&count=1&language=en&format=json`;
-
-    // Since the Open-Meteo geocoding API doesn't support reverse directly,
-    // we use a free alternative: nominatim (OpenStreetMap)
+    // Open-Meteo's geocoding API doesn't support reverse lookup directly,
+    // so we use a free alternative: nominatim (OpenStreetMap)
     const res = await fetch(
       `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&zoom=10&accept-language=en`,
       { headers: { 'Accept': 'application/json' } }

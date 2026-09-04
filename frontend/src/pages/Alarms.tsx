@@ -10,11 +10,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLoc } from '../contexts/LocContext';
-import { useTheme } from '../contexts/ThemeContext';
 import Glass from '../components/Glass';
 import {
   Shield, Clock, CheckCircle,
-  MapPin, ChevronDown, ChevronUp, Volume2, VolumeX,
+  ChevronDown, ChevronUp, Volume2, VolumeX,
   Zap, Eye, Siren, FlaskConical, X as XIcon,
   RefreshCw, CloudRain, Thermometer, Wind, AlertTriangle,
 } from 'lucide-react';
@@ -496,7 +495,6 @@ function WeatherStatusCard({ weather, locationName }: { weather: WeatherSnapshot
 
 export default function Alarms() {
   const { activeId, locations } = useLoc();
-  const { theme } = useTheme();
 
   const activeLoc = locations.find((l: any) => l.location_id === activeId || l.id === activeId);
   const lat = activeLoc?.latitude ?? null;
@@ -508,7 +506,7 @@ export default function Alarms() {
     criticalAlarm, dismissCritical, acknowledgeAlarm, recheck,
   } = useWeatherAlarms(lat, lon, locName);
 
-  const [testMode, setTestMode] = useState(false);
+  const [, setTestMode] = useState(false);
 
   // Test alarm (fake, frontend only)
   const handleTestAlarm = () => {
