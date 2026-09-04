@@ -1,0 +1,136 @@
+╔══════════════════════════════════════════════════════════════╗
+║                    VAYU VARTA — START HERE                   ║
+║              Weather AI Platform with Voice Chat             ║
+╚══════════════════════════════════════════════════════════════╝
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  LOGIN INFO
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Email:    test@example.com
+  Password: TestPass123!
+
+  Or click "Don't have an account? Sign up" to create a new one.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  HOW TO START (Step by Step)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  You need TWO terminal windows (or tabs).
+
+  ┌──────────────────────────────────────────────────────────┐
+  │  TERMINAL 1 — START BACKEND                             │
+  ├──────────────────────────────────────────────────────────┤
+  │                                                          │
+  │  cd /d D:\NEW BACKEND\backend                            │
+  │  uvicorn main:app --reload --port 8000                   │
+  │                                                          │
+  │  ✓ Server runs at: http://localhost:8000                 │
+  │  ✓ API docs at:    http://localhost:8000/docs            │
+  │                                                          │
+  └──────────────────────────────────────────────────────────┘
+
+  ┌──────────────────────────────────────────────────────────┐
+  │  TERMINAL 2 — START FRONTEND                            │
+  ├──────────────────────────────────────────────────────────┤
+  │                                                          │
+  │  cd /d D:\NEW BACKEND\frontend                           │
+  │  npm run dev                                             │
+  │                                                          │
+  │  ✓ Website runs at: http://localhost:3000                │
+  │                                                          │
+  └──────────────────────────────────────────────────────────┘
+
+  Then open http://localhost:3000 in your browser.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  WINDOWS POWERSHELL USERS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  If "cd /d" doesn't work, use:
+
+    Set-Location "D:\NEW BACKEND\backend"
+    uvicorn main:app --reload --port 8000
+
+  And:
+
+    Set-Location "D:\NEW BACKEND\frontend"
+    npm run dev
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  FEATURES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ✓ Real-time weather from Open-Meteo (free, no API key)
+  ✓ Live city search (type any city name worldwide)
+  ✓ VayuGPT AI assistant (Gemini-powered)
+  ✓ Voice chat (speak in English, Hindi, Bengali, Tamil, Telugu)
+  ✓ Fish Audio TTS (natural voice responses)
+  ✓ 7-day & hourly forecasts
+  ✓ Weather alerts
+  ✓ Dark/Light mode toggle
+  ✓ 39 premium Meteocons weather icons
+  ✓ Mobile responsive design
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  API KEYS USED (already configured in .env)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Supabase:      Configured (auth + database)
+  Gemini AI:     Configured (VayuGPT chat)
+  Fish Audio:    Configured (voice TTS)
+  Open-Meteo:    Free (no key needed)
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  TROUBLESHOOTING
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Q: "Port 3000 already in use"
+  A: Close other dev servers or use: npm run dev -- --port 3001
+
+  Q: "Backend not connecting"
+  A: Make sure backend is running on port 8000 first
+
+  Q: "Voice not working"
+  A: Use Chrome or Edge browser. Allow microphone access.
+
+  Q: "Changes not showing"
+  A: Hard refresh: Ctrl + Shift + R
+
+  Q: "Supabase error"
+  A: Check .env has correct SUPABASE_URL and SUPABASE_SERVICE_KEY
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  PROJECT STRUCTURE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  D:\NEW BACKEND\
+  ├── backend/                  Python FastAPI backend
+  │   ├── main.py              App entry point
+  │   ├── config.py            Settings & env vars
+  │   ├── .env                 API keys & config
+  │   ├── auth/                Authentication (JWT)
+  │   ├── weather/             Open-Meteo weather API
+  │   ├── ai/                  Gemini AI chat
+  │   ├── tts/                 Fish Audio voice TTS
+  │   ├── alerts/              Weather alerts
+  │   ├── locations/           City management
+  │   └── push/                Browser push notifications
+  │
+  ├── frontend/                 React + TypeScript + Vite
+  │   ├── src/
+  │   │   ├── pages/           Dashboard, Forecast, VayuGPT, etc.
+  │   │   ├── components/      UI components (Glass, WeatherIcon, etc.)
+  │   │   ├── hooks/           Voice hooks (speech recognition/TTS)
+  │   │   ├── contexts/        Theme, Location contexts
+  │   │   └── api/             API client
+  │   └── public/              Static assets (logo, icons)
+  │
+  └── START_HERE.txt            ← YOU ARE HERE

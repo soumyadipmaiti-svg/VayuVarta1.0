@@ -1,0 +1,35 @@
+# WeatherGPT Backend — Python Dependencies
+# Install with: pip install -r requirements.txt
+
+# ── Web Framework ─────────────────────────────────────────────────────────────
+fastapi==0.115.5
+uvicorn[standard]==0.32.1
+
+# ── Config & Validation ────────────────────────────────────────────────────────
+pydantic==2.9.2
+pydantic-settings==2.6.1
+pydantic[email]==2.9.2
+python-dotenv==1.0.1
+
+# ── Database (Supabase/PostgreSQL) ────────────────────────────────────────────
+supabase==2.10.0
+
+# ── Authentication ─────────────────────────────────────────────────────────────
+python-jose[cryptography]==3.3.0
+bcrypt==4.2.0
+
+# ── HTTP Client ────────────────────────────────────────────────────────────────
+httpx==0.27.2
+
+# ── AI / LLM ──────────────────────────────────────────────────────────────────
+google-generativeai==0.8.3
+
+# ── Web Push Notifications (like Zomato/Swiggy) ───────────────────────────────
+pywebpush==2.0.0
+py-vapid==1.9.1
+
+# ── Scheduling (Alert Engine cron) ────────────────────────────────────────────
+apscheduler==3.10.4
+
+# ── Utilities ─────────────────────────────────────────────────────────────────
+python-multipart==0.0.12

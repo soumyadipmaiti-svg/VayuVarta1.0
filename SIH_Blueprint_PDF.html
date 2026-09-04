@@ -1,0 +1,1790 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Vayu Varta — SIH 2026 Workflow Blueprint</title>
+<style>
+  /* ── Reset & Base ─────────────────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0A0F1C;
+    --surface: #111827;
+    --card: #1A2236;
+    --border: #2A3450;
+    --accent: #4FD1C5;
+    --accent-dim: rgba(79,209,197,0.12);
+    --blue: #3D9CFF;
+    --blue-dim: rgba(61,156,255,0.12);
+    --purple: #A78BFA;
+    --purple-dim: rgba(167,139,250,0.12);
+    --amber: #FFB84D;
+    --amber-dim: rgba(255,184,77,0.12);
+    --red: #FF5F6D;
+    --red-dim: rgba(255,95,109,0.12);
+    --green: #34D399;
+    --green-dim: rgba(52,211,153,0.12);
+    --text: #EAF2F8;
+    --muted: #718096;
+    --dim: #4A5568;
+  }
+
+  html { font-size: 15px; }
+
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.65;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* ── Print Styles ─────────────────────────────────────── */
+  @media print {
+    html { font-size: 13px; }
+    body { background: #fff; color: #1a1a2e; }
+    .page-break { page-break-before: always; }
+    .no-break { page-break-inside: avoid; }
+    .cover { min-height: 100vh; }
+    .section { border-color: #e2e8f0; background: #f8fafc; }
+    .section-title { color: #1a1a2e; }
+    .card { background: #fff; border-color: #e2e8f0; color: #334155; }
+    .diagram-box { background: #f1f5f9; border-color: #cbd5e1; color: #334155; }
+    .diagram-box.accent { border-left-color: #0d9488; }
+    .diagram-box.blue { border-left-color: #2563eb; }
+    .diagram-box.purple { border-left-color: #7c3aed; }
+    .diagram-box.amber { border-left-color: #d97706; }
+    .diagram-box.red { border-left-color: #dc2626; }
+    .diagram-box.green { border-left-color: #059669; }
+    .diagram-arrow { color: #64748b; }
+    .table-wrap table { border-color: #cbd5e1; }
+    .table-wrap th { background: #e2e8f0; color: #1e293b; }
+    .table-wrap td { border-color: #e2e8f0; color: #334155; }
+    .highlight-box { border-color: #0d9488; background: #f0fdfa; }
+    .tag { border-color: #cbd5e1; color: #475569; }
+    .badge { background: #e2e8f0; color: #1e293b; }
+    h1, h2, h3, h4 { color: #0f172a; }
+    p, li { color: #334155; }
+    .muted { color: #64748b; }
+    .accent-text { color: #0d9488; }
+    .blue-text { color: #2563eb; }
+    .purple-text { color: #7c3aed; }
+    .amber-text { color: #d97706; }
+    .red-text { color: #dc2626; }
+    .green-text { color: #059669; }
+  }
+
+  /* ── Cover Page ───────────────────────────────────────── */
+  .cover {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 4rem 2rem;
+    position: relative;
+    overflow: hidden;
+  }
+  .cover::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 30% 40%, rgba(79,209,197,0.08) 0%, transparent 60%),
+                radial-gradient(ellipse at 70% 60%, rgba(61,156,255,0.06) 0%, transparent 60%);
+  }
+  .cover-logo {
+    width: 90px; height: 90px;
+    border-radius: 24px;
+    background: linear-gradient(135deg, var(--accent), var(--blue));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 2.8rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 8px 32px rgba(79,209,197,0.25);
+    position: relative;
+  }
+  .cover h1 {
+    font-size: 3.2rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    background: linear-gradient(135deg, var(--text), var(--accent));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    position: relative;
+    margin-bottom: 0.5rem;
+  }
+  .cover .subtitle {
+    font-size: 1.3rem;
+    color: var(--accent);
+    font-weight: 500;
+    position: relative;
+    margin-bottom: 1rem;
+  }
+  .cover .tagline {
+    font-size: 1rem;
+    color: var(--muted);
+    max-width: 500px;
+    position: relative;
+    margin-bottom: 3rem;
+  }
+  .cover-meta {
+    display: flex;
+    gap: 2rem;
+    position: relative;
+  }
+  .cover-meta-item {
+    text-align: center;
+  }
+  .cover-meta-item .label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    margin-bottom: 0.25rem;
+  }
+  .cover-meta-item .value {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .cover-divider {
+    width: 60px;
+    height: 3px;
+    background: linear-gradient(90deg, var(--accent), var(--blue));
+    border-radius: 2px;
+    margin: 2rem auto 1.5rem;
+    position: relative;
+  }
+  .cover-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1.2rem;
+    border-radius: 100px;
+    border: 1px solid var(--border);
+    background: var(--card);
+    font-size: 0.85rem;
+    color: var(--accent);
+    font-weight: 500;
+    position: relative;
+  }
+
+  /* ── Sections ─────────────────────────────────────────── */
+  .content { max-width: 900px; margin: 0 auto; padding: 2rem; }
+
+  .section {
+    margin-bottom: 2.5rem;
+    padding: 1.8rem;
+    border-radius: 16px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+  }
+  .section-number {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    margin-right: 0.6rem;
+    flex-shrink: 0;
+  }
+  .section-number.accent { background: var(--accent-dim); color: var(--accent); }
+  .section-number.blue { background: var(--blue-dim); color: var(--blue); }
+  .section-number.purple { background: var(--purple-dim); color: var(--purple); }
+  .section-number.amber { background: var(--amber-dim); color: var(--amber); }
+  .section-number.red { background: var(--red-dim); color: var(--red); }
+  .section-number.green { background: var(--green-dim); color: var(--green); }
+
+  .section-title {
+    display: flex;
+    align-items: center;
+    font-size: 1.35rem;
+    font-weight: 700;
+    margin-bottom: 1.2rem;
+    letter-spacing: -0.01em;
+  }
+
+  h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text);
+    margin: 1.2rem 0 0.6rem;
+  }
+  h4 {
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin: 1rem 0 0.5rem;
+  }
+
+  p { margin-bottom: 0.7rem; color: var(--muted); font-size: 0.92rem; }
+  p strong { color: var(--text); font-weight: 600; }
+
+  ul { padding-left: 1.2rem; margin-bottom: 0.8rem; }
+  li { margin-bottom: 0.3rem; color: var(--muted); font-size: 0.92rem; }
+  li strong { color: var(--text); }
+
+  /* ── Cards ────────────────────────────────────────────── */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.2rem;
+    margin-bottom: 0.8rem;
+  }
+  .card-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  /* ── Diagram Boxes ────────────────────────────────────── */
+  .diagram-box {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--dim);
+    border-radius: 10px;
+    padding: 1rem 1.2rem;
+    margin-bottom: 0.6rem;
+    font-size: 0.88rem;
+  }
+  .diagram-box.accent { border-left-color: var(--accent); }
+  .diagram-box.blue { border-left-color: var(--blue); }
+  .diagram-box.purple { border-left-color: var(--purple); }
+  .diagram-box.amber { border-left-color: var(--amber); }
+  .diagram-box.red { border-left-color: var(--red); }
+  .diagram-box.green { border-left-color: var(--green); }
+
+  .diagram-box .title {
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 0.3rem;
+  }
+  .diagram-box .desc {
+    color: var(--muted);
+    font-size: 0.82rem;
+  }
+
+  .diagram-arrow {
+    text-align: center;
+    color: var(--dim);
+    font-size: 1.2rem;
+    margin: 0.3rem 0;
+    letter-spacing: 0.1em;
+  }
+  .diagram-arrow-down {
+    text-align: center;
+    color: var(--dim);
+    font-size: 1rem;
+    margin: 0.4rem 0;
+  }
+
+  /* ── Grid Layouts ─────────────────────────────────────── */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.8rem; }
+  .grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 0.8rem; }
+
+  @media (max-width: 700px) {
+    .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+  }
+
+  /* ── Tables ───────────────────────────────────────────── */
+  .table-wrap { overflow-x: auto; margin: 0.8rem 0; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+  }
+  th, td {
+    padding: 0.6rem 0.8rem;
+    text-align: left;
+    border: 1px solid var(--border);
+  }
+  th {
+    background: var(--card);
+    color: var(--text);
+    font-weight: 600;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  td { color: var(--muted); }
+  tr:nth-child(even) td { background: rgba(255,255,255,0.015); }
+
+  /* ── Tags & Badges ────────────────────────────────────── */
+  .tag {
+    display: inline-block;
+    padding: 0.2rem 0.6rem;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--muted);
+    margin: 0.15rem;
+  }
+  .tag.accent { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
+  .tag.blue { border-color: var(--blue); color: var(--blue); background: var(--blue-dim); }
+  .tag.purple { border-color: var(--purple); color: var(--purple); background: var(--purple-dim); }
+  .tag.amber { border-color: var(--amber); color: var(--amber); background: var(--amber-dim); }
+  .tag.red { border-color: var(--red); color: var(--red); background: var(--red-dim); }
+  .tag.green { border-color: var(--green); color: var(--green); background: var(--green-dim); }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.15rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .badge.green { background: var(--green-dim); color: var(--green); }
+  .badge.red { background: var(--red-dim); color: var(--red); }
+  .badge.amber { background: var(--amber-dim); color: var(--amber); }
+  .badge.blue { background: var(--blue-dim); color: var(--blue); }
+
+  /* ── Highlight Box ────────────────────────────────────── */
+  .highlight-box {
+    border: 1px solid var(--accent);
+    border-radius: 12px;
+    padding: 1.2rem 1.5rem;
+    background: var(--accent-dim);
+    margin: 1rem 0;
+  }
+  .highlight-box.red { border-color: var(--red); background: var(--red-dim); }
+  .highlight-box.blue { border-color: var(--blue); background: var(--blue-dim); }
+  .highlight-box.purple { border-color: var(--purple); background: var(--purple-dim); }
+
+  /* ── Flow Diagrams ────────────────────────────────────── */
+  .flow-row {
+    display: flex;
+    align-items: stretch;
+    gap: 0.6rem;
+    margin: 0.6rem 0;
+  }
+  .flow-box {
+    flex: 1;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.9rem;
+    text-align: center;
+  }
+  .flow-box .icon { font-size: 1.4rem; margin-bottom: 0.3rem; }
+  .flow-box .name { font-size: 0.82rem; font-weight: 600; color: var(--text); }
+  .flow-box .sub { font-size: 0.72rem; color: var(--muted); margin-top: 0.2rem; }
+
+  .flow-arrow {
+    display: flex;
+    align-items: center;
+    color: var(--dim);
+    font-size: 1.1rem;
+    flex-shrink: 0;
+  }
+
+  .flow-connector {
+    text-align: center;
+    padding: 0.2rem 0;
+    color: var(--dim);
+    font-size: 0.9rem;
+  }
+
+  /* ── Two Column Comparison ────────────────────────────── */
+  .compare-row {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    gap: 0.8rem;
+    align-items: start;
+    margin: 0.8rem 0;
+  }
+  .compare-vs {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--dim);
+    padding-top: 2rem;
+  }
+
+  /* ── Pipeline ─────────────────────────────────────────── */
+  .pipeline {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    overflow-x: auto;
+    padding: 0.5rem 0;
+    margin: 0.8rem 0;
+  }
+  .pipeline-step {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.7rem 1rem;
+    text-align: center;
+    min-width: 120px;
+    flex-shrink: 0;
+  }
+  .pipeline-step .num {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    font-weight: 700;
+    margin-bottom: 0.3rem;
+  }
+  .pipeline-step .label { font-size: 0.78rem; font-weight: 600; color: var(--text); }
+  .pipeline-step .desc { font-size: 0.68rem; color: var(--muted); margin-top: 0.15rem; }
+  .pipeline-arrow {
+    color: var(--dim);
+    font-size: 0.9rem;
+    flex-shrink: 0;
+    padding: 0 0.2rem;
+  }
+
+  /* ── Accent Text ──────────────────────────────────────── */
+  .accent-text { color: var(--accent); }
+  .blue-text { color: var(--blue); }
+  .purple-text { color: var(--purple); }
+  .amber-text { color: var(--amber); }
+  .red-text { color: var(--red); }
+  .green-text { color: var(--green); }
+  .muted { color: var(--muted); }
+  .dim { color: var(--dim); }
+
+  /* ── Separator ────────────────────────────────────────── */
+  hr {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 1.2rem 0;
+  }
+
+  /* ── Code / Mono ──────────────────────────────────────── */
+  code {
+    font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+    font-size: 0.82em;
+    background: var(--card);
+    border: 1px solid var(--border);
+    padding: 0.15em 0.4em;
+    border-radius: 4px;
+    color: var(--accent);
+  }
+
+  pre {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1rem 1.2rem;
+    overflow-x: auto;
+    font-size: 0.82rem;
+    line-height: 1.5;
+    color: var(--muted);
+    margin: 0.8rem 0;
+  }
+  pre code { background: none; border: none; padding: 0; }
+
+  /* ── Feature Grid ─────────────────────────────────────── */
+  .feature-item {
+    display: flex;
+    gap: 0.8rem;
+    padding: 0.8rem 1rem;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    margin-bottom: 0.5rem;
+  }
+  .feature-item .icon-wrap {
+    width: 40px; height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    flex-shrink: 0;
+  }
+  .feature-item .info { flex: 1; }
+  .feature-item .name { font-size: 0.88rem; font-weight: 600; color: var(--text); }
+  .feature-item .desc { font-size: 0.78rem; color: var(--muted); margin-top: 0.15rem; }
+
+  /* ── Severity Levels ──────────────────────────────────── */
+  .severity-row {
+    display: flex;
+    gap: 0.8rem;
+    margin: 0.8rem 0;
+  }
+  .severity-card {
+    flex: 1;
+    border-radius: 10px;
+    padding: 1rem;
+    text-align: center;
+    border: 1px solid;
+  }
+  .severity-card.watch {
+    border-color: var(--amber);
+    background: var(--amber-dim);
+  }
+  .severity-card.warning {
+    border-color: #F97316;
+    background: rgba(249,115,22,0.12);
+  }
+  .severity-card.critical {
+    border-color: var(--red);
+    background: var(--red-dim);
+  }
+  .severity-card .level { font-size: 1.4rem; margin-bottom: 0.3rem; }
+  .severity-card .name { font-size: 0.85rem; font-weight: 700; color: var(--text); }
+  .severity-card .behavior { font-size: 0.75rem; color: var(--muted); margin-top: 0.3rem; }
+
+  /* ── Print-specific ───────────────────────────────────── */
+  @media print {
+    .cover { min-height: auto; padding: 6rem 2rem 4rem; }
+    .section { break-inside: avoid; }
+    .card { break-inside: avoid; }
+    .diagram-box { break-inside: avoid; }
+    .feature-item { break-inside: avoid; }
+    .pipeline { flex-wrap: wrap; justify-content: center; }
+    .severity-row { flex-wrap: wrap; }
+    .severity-card { min-width: 200px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════════════════════════ -->
+<!--                        COVER PAGE                          -->
+<!-- ════════════════════════════════════════════════════════════ -->
+<div class="cover">
+  <div class="cover-logo">🌦️</div>
+  <h1>Vayu Varta</h1>
+  <div class="subtitle">AI-Powered Weather Intelligence Platform</div>
+  <p class="tagline">
+    A predictive early-warning system that cuts through notification noise
+    and warns users only when it truly matters — with enough lead time to
+    act before disaster strikes.
+  </p>
+  <div class="cover-divider"></div>
+  <div class="cover-badge">
+    🏆 Smart India Hackathon 2026 — Workflow Blueprint
+  </div>
+  <div style="height:2rem"></div>
+  <div class="cover-meta">
+    <div class="cover-meta-item">
+      <div class="label">Version</div>
+      <div class="value">1.0</div>
+    </div>
+    <div class="cover-meta-item">
+      <div class="label">Date</div>
+      <div class="value">September 2026</div>
+    </div>
+    <div class="cover-meta-item">
+      <div class="label">Stack</div>
+      <div class="value">React + FastAPI + Supabase</div>
+    </div>
+    <div class="cover-meta-item">
+      <div class="label">Status</div>
+      <div class="value">Fully Functional</div>
+    </div>
+  </div>
+</div>
+
+<div class="content">
+
+<!-- ════════════════════════════════════════════════════════════ -->
+<!--                     1. PROJECT OVERVIEW                     -->
+<!-- ════════════════════════════════════════════════════════════ -->
+<div class="section page-break">
+  <div class="section-title">
+    <span class="section-number accent">1</span>
+    Project Overview
+  </div>
+  <p>
+    <strong>Vayu Varta</strong> is a full-stack AI-powered weather intelligence platform
+    designed for <strong>rural and urban India</strong>. It provides real-time weather data,
+    a voice-enabled AI assistant (VayuGPT) that speaks Bengali, Hindi, and English,
+    and a <strong>predictive alarm system</strong> that warns users <em>before</em> disasters strike.
+  </p>
+
+  <div class="highlight-box">
+    <div class="card-title">⭐ Key Innovation: "Before the Disaster"</div>
+    <p style="margin:0">
+      Instead of reacting to weather events, Vayu Varta <strong>predicts</strong> them and
+      gives users a <strong>countdown timer</strong> before the disaster hits — turning a
+      reactive weather app into a <strong>proactive early-warning system</strong>.
+    </p>
+  </div>
+
+  <h3>Core Goals</h3>
+  <div class="grid-2">
+    <div class="feature-item">
+      <div class="icon-wrap" style="background:var(--accent-dim)">🎯</div>
+      <div class="info">
+        <div class="name">AI-Prioritized Alerts</div>
+        <div class="desc">Only warn users about dangers that actually affect THEIR location</div>
+      </div>
+    </div>
+    <div class="feature-item">
+      <div class="icon-wrap" style="background:var(--blue-dim)">🗣️</div>
+      <div class="info">
+        <div class="name">Multilingual Voice</div>
+        <div class="desc">Bengali, Hindi & English — speak to AI, AI speaks back</div>
+      </div>
+    </div>
+    <div class="feature-item">
+      <div class="icon-wrap" style="background:var(--green-dim)">💸</div>
+      <div class="info">
+        <div class="name">Free & Open</div>
+        <div class="desc">Open-Meteo, Supabase free tier, Gemini free tier — zero cost</div>
+      </div>
+    </div>
+    <div class="feature-item">
+      <div class="icon-wrap" style="background:var(--purple-dim)">🌾</div>
+      <div class="info">
+        <div class="name">Rural-First</div>
+        <div class="desc">Simple language, voice-first UX, works on any phone</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════ -->
+<!--                       2. TECH STACK                        -->
+<!-- ════════════════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-title">
+    <span class="section-number blue">2</span>
+    Technology Stack
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th style="width:130px">Layer</th>
+          <th>Technology</th>
+          <th>Purpose</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Frontend</strong></td>
+          <td>
+            <span class="tag accent">React 18</span>
+            <span class="tag blue">TypeScript</span>
+            <span class="tag purple">Vite</span>
+          </td>
+          <td>UI framework, type safety, build tool</td>
+        </tr>
+        <tr>
+          <td><strong>Styling</strong></td>
+          <td>
+            <span class="tag accent">Tailwind CSS</span>
+            <span class="tag blue">Framer Motion</span>
+          </td>
+          <td>Utility CSS, smooth animations</td>
+        </tr>
+        <tr>
+          <td><strong>Icons</strong></td>
+          <td>
+            <span class="tag purple">Meteocons</span>
+            <span class="tag blue">Lottie</span>
+          </td>
+          <td>39 animated weather icons</td>
+        </tr>
+        <tr>
+          <td><strong>3D Model</strong></td>
+          <td>
+            <span class="tag accent">Spline</span>
+          </td>
+          <td>Interactive robot on login/hero page</td>
+        </tr>
+        <tr>
+          <td><strong>Backend</strong></td>
+          <td>
+            <span class="tag green">Python 3.13</span>
+            <span class="tag accent">FastAPI</span>
+            <span class="tag blue">Uvicorn</span>
+          </td>
+          <td>REST API server, async operations</td>
+        </tr>
+        <tr>
+          <td><strong>Scheduler</strong></td>
+          <td>
+            <span class="tag amber">APScheduler</span>
+          </td>
+          <td>Background alarm & alert evaluation</td>
+        </tr>
+        <tr>
+          <td><strong>Database</strong></td>
+          <td>
+            <span class="tag green">Supabase</span>
+            <span class="tag blue">PostgreSQL</span>
+          </td>
+          <td>User data, locations, alarms, alerts</td>
+        </tr>
+        <tr>
+          <td><strong>Auth</strong></td>
+          <td>
+            <span class="tag green">Supabase Auth</span>
+            <span class="tag purple">JWT</span>
+          </td>
+          <td>User registration, login, sessions</td>
+        </tr>
+        <tr>
+          <td><strong>AI Engine</strong></td>
+          <td>
+            <span class="tag purple">Google Gemini</span>
+            <span class="tag accent">3.5 Flash Lite</span>
+          </td>
+          <td>VayuGPT conversational responses (streaming)</td>
+        </tr>
+        <tr>
+          <td><strong>Voice Input</strong></td>
+          <td>
+            <span class="tag blue">Web Speech API</span>
+          </td>
+          <td>Speech recognition (Bengali, Hindi, English)</td>
+        </tr>
+        <tr>
+          <td><strong>Voice Output</strong></td>
+          <td>
+            <span class="tag amber">Fish Audio TTS</span>
+          </td>
+          <td>Natural voice responses in local languages</td>
+        </tr>
+        <tr>
+          <td><strong>Weather Data</strong></td>
+          <td>
+            <span class="tag green">Open-Meteo API</span>
+          </td>
+          <td>Free real-time weather & forecast data</td>
+        </tr>
+        <tr>
+          <td><strong>Push Notifs</strong></td>
+          <td>
+            <span class="tag red">Web Push API</span>
+            <span class="tag blue">VAPID Keys</span>
+          </td>
+          <td>Browser notifications (Zomato/Swiggy style)</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════ -->
+<!--                   3. SYSTEM ARCHITECTURE                   -->
+<!-- ════════════════════════════════════════════════════════════ -->
+<div class="section page-break">
+  <div class="section-title">
+    <span class="section-number purple">3</span>
+    System Architecture
+  </div>
+  <p>High-level view of how all components communicate.</p>
+
+  <!-- Architecture Diagram -->
+  <div style="text-align:center; margin: 1.5rem 0;">
+    <div class="flow-row" style="justify-content:center; margin-bottom:0.3rem;">
+      <div class="flow-box" style="max-width:200px; border-color:var(--accent);">
+        <div class="icon">📱</div>
+        <div class="name">User Device</div>
+        <div class="sub">Mobile / Desktop Browser</div>
+      </div>
+    </div>
+    <div class="flow-connector">⬇ HTTPS ⬇</div>
+
+    <div class="flow-row" style="justify-content:center; margin-bottom:0.3rem;">
+      <div class="flow-box" style="max-width:240px; border-color:var(--blue);">
+        <div class="icon">⚛️</div>
+        <div class="name">React Frontend</div>
+        <div class="sub">TypeScript + Vite + Tailwind</div>
+      </div>
+    </div>
+    <div class="flow-connector">⬇ REST API / SSE ⬇</div>
+
+    <div class="flow-row" style="justify-content:center; margin-bottom:0.3rem;">
+      <div class="flow-box" style="max-width:240px; border-color:var(--green);">
+        <div class="icon">⚡</div>
+        <div class="name">FastAPI Backend</div>
+        <div class="sub">Python 3.13 + Uvicorn :8000</div>
+      </div>
+    </div>
+    <div class="flow-connector">⬇ connects to ⬇</div>
+
+    <div class="flow-row" style="justify-content:center; gap:1rem; flex-wrap:wrap;">
+      <div class="flow-box" style="border-color:var(--accent);">
+        <div class="icon">🗄️</div>
+        <div class="name">Supabase</div>
+        <div class="sub">Database + Auth</div>
+      </div>
+      <div class="flow-box" style="border-color:var(--blue);">
+        <div class="icon">🌤️</div>
+        <div class="name">Open-Meteo</div>
+        <div class="sub">Weather Data (Free)</div>
+      </div>
+      <div class="flow-box" style="border-color:var(--purple);">
+        <div class="icon">🤖</div>
+        <div class="name">Gemini AI</div>
+        <div class="sub">VayuGPT Engine</div>
+      </div>
+      <div class="flow-box" style="border-color:var(--amber);">
+        <div class="icon">🔊</div>
+        <div class="name">Fish Audio</div>
+        <div class="sub">Voice TTS</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════ -->
+<!--                 4. USER ONBOARDING FLOW                    -->
+<!-- ════════════════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-title">
+    <span class="section-number accent">4</span>
+    User Onboarding Flow
+  </div>
+
+  <div class="pipeline">
+    <div class="pipeline-step">
+      <div class="num" style="background:var(--blue-dim);color:var(--blue);">1</div>
+      <div class="label">User Opens App</div>
+      <div class="desc">localhost:3000</div>
+    </div>
+    <div class="pipeline-arrow">→</div>
+    <div class="pipeline-step">
+      <div class="num" style="background:var(--purple-dim);color:var(--purple);">2</div>
+      <div class="label">Welcome Page</div>
+      <div class="desc">3D Robot + Logo</div>
+    </div>
+    <div class="pipeline-arrow">→</div>
+    <div class="pipeline-step">
+      <div class="num" style="background:var(--accent-dim);color:var(--accent);">3</div>
+      <div class="label">Choose Path</div>
+      <div class="desc">Guest or Sign Up</div>
+    </div>
+    <div class="pipeline-arrow">→</div>
+    <div class="pipeline-step">
+      <div class="num" style="background:var(--green-dim);color:var(--green);">4</div>
+      <div class="label">Main App</div>
+      <div class="desc">Dashboard + Weather</div>
+    </div>
+  </div>
+
+  <div class="compare-row">
+    <div class="card" style="border-color:var(--accent);">
+      <div class="card-title">
+        <span class="badge green">GUEST MODE</span>
+        "Get Started Now"
+      </div>
+      <p style="margin:0.5rem 0 0.3rem"><strong>No signup needed.</strong> Explorer mode.</p>
+      <ul style="margin:0">
+        <li>✅ Dashboard — live weather</li>
+        <li>✅ Forecast — 7-day + hourly</li>
+        <li>✅ Climate — historical data</li>
+        <li>✅ Locations — save cities</li>
+        <li>✅ GPS auto-detection</li>
+        <li class="dim">❌ VayuGPT (shows signup prompt)</li>
+        <li class="dim">❌ Vayu Alerts (shows signup prompt)</li>
+        <li class="dim">❌ Profile (shows signup prompt)</li>
+      </ul>
+    </div>
+
+    <div class="compare-vs">VS</div>
+
+    <div class="card" style="border-color:var(--blue);">
+      <div class="card-title">
+        <span class="badge blue">SIGNED UP</span>
+        "Sign In" / "Sign Up Free"
+      </div>
+      <p style="margin:0.5rem 0 0.3rem"><strong>Full access.</strong> All features unlocked.</p>
+      <ul style="margin:0">
+        <li>✅ Dashboard — live weather</li>
+        <li>✅ Forecast — 7-day + hourly</li>
+        <li>✅ Climate — historical data</li>
+        <li>✅ Locations — save unlimited</li>
+        <li>✅ GPS auto-detection</li>
+        <li>✅ VayuGPT — AI assistant</li>
+        <li>✅ Vayu Alerts — AI alarms</li>
+        <li>✅ Profile — account settings</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="highlight-box" style="margin-top:1rem">
+    <div class="card-title">💡 Signup Gate Strategy</div>
+    <p style="margin:0">
+      Guests can explore the core weather features for free. When they try to access
+      premium features (AI, Alarms, Voice), a <strong>friendly modal</strong> appears:
+      <em>"Sign up free to unlock VayuGPT, Voice Chat, and Weather Alarms."</em>
+      This gives users a taste before asking for commitment.
+    </p>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════ -->
+<!--                  5. GPS AUTO-DETECTION                     -->
+<!-- ════════════════════════════════════════════════════════════ -->
+<div class="section page-break">
+  <div class="section-title">
+    <span class="section-number green">5</span>
+    GPS Auto-Detection Flow
+  </div>
+
+  <div class="pipeline">
+    <div class="pipeline-step" style="border-color:var(--blue);">
+      <div class="num" style="background:var(--blue-dim);color:var(--blue);">1</div>
+      <div class="label">App Opens</div>
+      <div class="desc">Browser GPS prompt</div>
+    </div>
+    <div class="pipeline-arrow">→</div>
+    <div class="pipeline-step" style="border-color:var(--accent);">
+      <div class="num" style="background:var(--accent-dim);color:var(--accent);">2</div>
+      <div class="label">User Allows</div>
+      <div class="desc">GPS coordinates</div>
+    </div>
+    <div class="pipeline-arrow">→</div>
+    <div class="pipeline-step" style="border-color:var(--purple);">
+      <div class="num" style="background:var(--purple-dim);color:var(--purple);">3</div>
+      <div class="label">Reverse Geocode</div>
+      <div class="desc">Lat/Lon → City name</div>
+    </div>
+    <div class="pipeline-arrow">→</div>
+    <div class="pipeline-step" style="border-color:var(--green);">
+      <div class="num" style="background:var(--green-dim);color:var(--green);">4</div>
+      <div class="label">Save Location</div>
+      <div class="desc">DB or localStorage</div>
+    </div>
+    <div class="pipeline-arrow">→</div>
+    <div class="pipeline-step" style="border-color:var(--amber);">
+      <div class="num" style="background:var(--amber-dim);color:var(--amber);">5</div>
+      <div class="label">Fetch Weather</div>
+      <div class="desc">Open-Meteo API</div>
+    </div>
+    <div class="pipeline-arrow">→</div>
+    <div class="pipeline-step" style="border-color:var(--accent);">
+      <div class="num" style="background:var(--accent-dim);color:var(--accent);">6</div>
+      <div class="label">Display</div>
+      <div class="desc">Dashboard + Forecast</div>
+    </div>
+  </div>
+
+  <div class="grid-2" style="margin-top:1rem">
+    <div class="diagram-box accent">
+      <div class="title">Guest Mode</div>
+      <div class="desc">Location saved to <code>localStorage</code>. Weather fetched directly from Open-Meteo (client-side, no auth needed).</div>
+    </div>
+    <div class="diagram-box blue">
+      <div class="title">Logged-in Mode</div>
+      <div class="desc">Location saved to <code>Supabase DB</code> with user ID. Weather fetched via backend API with JWT auth.</div>
+    </div>
+  </div>
+
+  <div class="diagram-box green" style="margin-top:0.6rem">
+    <div class="title">Auto-Refresh</div>
+    <div class="desc">When GPS tracking is active, dashboard weather auto-refreshes every <strong>5 minutes</strong> to keep data current.</div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════ -->
+<!--                6. VAYUGPT AI CONVERSATION                  -->
+<!-- ════════════════════════════════════════════════════════════ -->
+<div class="section page-break">
+  <div class="section-title">
+    <span class="section-number purple">6</span>
+    VayuGPT — AI Conversation Flow
+  </div>
+
+  <div class="pipeline" style="flex-wrap:wrap; justify-content:center;">
+    <div class="pipeline-step" style="border-color:var(--blue);">
+      <div class="num" style="background:var(--blue-dim);color:var(--blue);">1</div>
+      <div class="label">User Input</div>
+      <div class="desc">Type or Speak</div>
+    </div>
+    <div class="pipeline-arrow">→</div>
+    <div class="pipeline-step" style="border-color:var(--amber);">
+      <div class="num" style="background:var(--amber-dim);color:var(--amber);">2</div>
+      <div class="label">Detect Language</div>
+      <div class="desc">EN / HI / BN</div>
+    </div>
+    <div class="pipeline-arrow">→</div>
+    <div class="pipeline-step" style="border-color:var(--green);">
+      <div class="num" style="background:var(--green-dim);color:var(--green);">3</div>
+      <div class="label">Fetch Weather</div>
+      <div class="desc">Current + 3-day + hourly</div>
+    </div>
+    <div class="pipeline-arrow">→</div>
+    <div class="pipeline-step" style="border-color:var(--purple);">
+      <div class="num" style="background:var(--purple-dim);color:var(--purple);">4</div>
+      <div class="label">Gemini AI</div>
+      <div class="desc">Streaming response</div>
+    </div>
+    <div class="pipeline-arrow">→</div>
+    <div class="pipeline-step" style="border-color:var(--accent);">
+      <div class="num" style="background:var(--accent-dim);color:var(--accent);">5</div>
+      <div class="label">Display</div>
+      <div class="desc">Token-by-token text</div>
+    </div>
+    <div class="pipeline-arrow">→</div>
+    <div class="pipeline-step" style="border-color:var(--red);">
+      <div class="num" style="background:var(--red-dim);color:var(--red);">6</div>
+      <div class="label">Voice (if spoken)</div>
+      <div class="desc">Fish Audio TTS</div>
+    </div>
+  </div>
+
+  <h3>Smart Input Handling</h3>
+  <div class="grid-3">
+    <div class="diagram-box accent">
+      <div class="title">⌨️ Typed Input</div>
+      <div class="desc">User types question → AI responds with <strong>text only</strong>. No voice output.</div>
+    </div>
+    <div class="diagram-box blue">
+      <div class="title">🎤 Voice Input</div>
+      <div class="desc">User speaks → Speech Recognition captures → AI responds with <strong>text + voice</strong>.</div>
+    </div>
+    <div class="diagram-box purple">
+      <div class="title">🔇 Auto-Send</div>
+      <div class="desc">After 2.5 seconds of silence, voice input <strong>auto-sends</strong> to AI. No button tap needed.</div>
+    </div>
+  </div>
+
+  <h3>Streaming Architecture</h3>
+  <div class="diagram-box blue" style="margin-top:0.5rem">
+    <div class="title">How Streaming Works (ChatGPT-like speed)</div>
+    <div class="desc" style="margin-top:0.4rem">
+      1. Backend fetches weather + conversation history in <strong>parallel</strong> (~0.3s)<br>
+      2. Gemini starts generating tokens immediately<br>
+      3. Each token is sent via <strong>Server-Sent Events (SSE)</strong><br>
+      4. Frontend renders text token-by-token with a <strong>blinking cursor</strong><br>
+      5. First word appears in <strong>~0.5 seconds</strong>, full response in <strong>2-3 seconds</strong>
+    </div>
+  </div>
+
+  <h3>Language Matching</h3>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>User writes in</th>
+          <th>AI replies in</th>
+          <th>Voice speaks in</th>
+          <th>Voice Speed</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>English</td>
+          <td><span class="tag green">English</span></td>
+          <td>English voice</td>
+          <td>1.0x</td>
+        </tr>
+        <tr>
+          <td>Hindi (हिंदी)</td>
+          <td><span class="tag amber">Hindi</span></td>
+          <td>Hindi voice</td>
+          <td>0.85x</td>
+        </tr>
+        <tr>
+          <td>Bengali (বাংলা)</td>
+          <td><span class="tag blue">Bengali</span></td>
+          <td>Bengali voice</td>
+          <td>0.75x (slower for rural clarity)</td>
+        </tr>
+        <tr>
+          <td>Banglish (ami, ki, ache)</td>
+          <td><span class="tag blue">Bengali</span></td>
+          <td>Bengali voice</td>
+          <td>0.75x</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════ -->
+<!--               7. ALARM SYSTEM (KEY INNOVATION)             -->
+<!-- ════════════════════════════════════════════════════════════ -->
+<div class="section page-break">
+  <div class="section-title">
+    <span class="section-number red">7</span>
+    🚨 AI Weather Alarm System — Key Innovation
+  </div>
+
+  <div class="highlight-box red">
+    <div class="card-title">⭐ "Before the Disaster" — Predictive Early Warning</div>
+    <p style="margin:0">
+      The alarm engine runs <strong>every 15 minutes</strong>, checking weather conditions for
+      each user's saved location. When it detects dangerous conditions approaching,
+      it creates an alarm with a <strong>countdown timer</strong> showing when the disaster
+      will hit — giving users time to prepare.
+    </p>
+  </div>
+
+  <h3>Alarm Pipeline</h3>
+  <div class="pipeline">
+    <div class="pipeline-step" style="border-color:var(--blue);">
+      <div class="num" style="background:var(--blue-dim);color:var(--blue);">1</div>
+      <div class="label">Weather Data</div>
+      <div class="desc">Open-Meteo API</div>
+    </div>
+    <div class="pipeline-arrow">→</div>
+    <div class="pipeline-step" style="border-color:var(--amber);">
+      <div class="num" style="background:var(--amber-dim);color:var(--amber);">2</div>
+      <div class="label">Risk Detection</div>
+      <div class="desc">Every 15 minutes</div>
+    </div>
+    <div class="pipeline-arrow">→</div>
+    <div class="pipeline-step" style="border-color:var(--purple);">
+      <div class="num" style="background:var(--purple-dim);color:var(--purple);">3</div>
+      <div class="label">Severity Check</div>
+      <div class="desc">Watch / Warning / Critical</div>
+    </div>
+    <div class="pipeline-arrow">→</div>
+    <div class="pipeline-step" style="border-color:var(--red);">
+      <div class="num" style="background:var(--red-dim);color:var(--red);">4</div>
+      <div class="label">Alarm Trigger</div>
+      <div class="desc">Countdown + notification</div>
+    </div>
+    <div class="pipeline-arrow">→</div>
+    <div class="pipeline-step" style="border-color:var(--green);">
+      <div class="num" style="background:var(--green-dim);color:var(--green);">5</div>
+      <div class="label">Safety Guidance</div>
+      <div class="desc">Step-by-step actions</div>
+    </div>
+  </div>
+
+  <h3>Severity Levels</h3>
+  <div class="severity-row">
+    <div class="severity-card watch">
+      <div class="level">🟡</div>
+      <div class="name">WATCH</div>
+      <div class="behavior">Standard silent push notification</div>
+    </div>
+    <div class="severity-card warning">
+      <div class="level">🟠</div>
+      <div class="name">WARNING</div>
+      <div class="behavior">Loud alert sound + phone vibration</div>
+    </div>
+    <div class="severity-card critical">
+      <div class="level">🔴</div>
+      <div class="name">CRITICAL</div>
+      <div class="behavior">Full-screen alarm + siren + repeat until acknowledged</div>
+    </div>
+  </div>
+
+  <h3>Danger Types Detected</h3>
+  <div class="grid-2">
+    <div class="diagram-box red">
+      <div class="title">🌀 Cyclone / Tropical Storm</div>
+      <div class="desc">Tracks cyclone formation near user location</div>
+    </div>
+    <div class="diagram-box blue">
+      <div class="title">🌊 Flash Flood Risk</div>
+      <div class="desc">Heavy rainfall + terrain = flood potential</div>
+    </div>
+    <div class="diagram-box amber">
+      <div class="title">🌡️ Extreme Heatwave</div>
+      <div class="desc">Temperature above 42°C for extended periods</div>
+    </div>
+    <div class="diagram-box purple">
+      <div class="title">⛈️ Severe Thunderstorm</div>
+      <div class="desc">Lightning, hail, damaging winds</div>
+    </div>
+    <div class="diagram-box red">
+      <div class="title">🌪️ Tornado / Squall</div>
+      <div class="desc">Sudden wind speed spikes</div>
+    </div>
+    <div class="diagram-box blue">
+      <div class="title">🌫️ Dense Fog</div>
+      <div class="desc">Visibility below 50 meters</div>
+    </div>
+    <div class="diagram-box amber">
+      <div class="title">💨 Extreme Wind</div>
+      <div class="desc">Wind speeds above 80 km/h</div>
+    </div>
+    <div class="diagram-box purple">
+      <div class="title">❄️ Blizzard / Hail</div>
+      <div class="desc">Heavy snow or hailstorm conditions</div>
+    </div>
+  </div>
+
+  <h3>AI-Prioritized Alert Logic</h3>
+  <div class="diagram-box accent" style="margin-top:0.5rem">
+    <div class="title">Why This Is Different From Other Weather Apps</div>
+    <div class="desc" style="margin-top:0.4rem">
+      <strong>Other apps:</strong> Notify for every weather change → notification fatigue → users ignore alerts<br>
+      <strong>Vayu Varta:</strong> AI considers <strong>hazard severity × proximity to user × timing</strong> → only alerts when it actually matters<br><br>
+      <strong>Example:</strong> Heavy rain occurring 50km away → no alert. Flash flood risk within 5km of user → 🔴 CRITICAL ALARM with countdown.
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════ -->
+<!--                    8. FEATURE MAP                          -->
+<!-- ════════════════════════════════════════════════════════════ -->
+<div class="section page-break">
+  <div class="section-title">
+    <span class="section-number green">8</span>
+    Complete Feature Map
+  </div>
+
+  <h3>Public Features (No Login)</h3>
+  <div class="grid-2">
+    <div class="feature-item">
+      <div class="icon-wrap" style="background:var(--accent-dim)">🌤️</div>
+      <div class="info">
+        <div class="name">Dashboard</div>
+        <div class="desc">Real-time weather with animated icons, temp, humidity, wind, UV, pressure</div>
+      </div>
+    </div>
+    <div class="feature-item">
+      <div class="icon-wrap" style="background:var(--blue-dim)">📅</div>
+      <div class="info">
+        <div class="name">Forecast</div>
+        <div class="desc">7-day forecast + tap any day for hourly breakdown</div>
+      </div>
+    </div>
+    <div class="feature-item">
+      <div class="icon-wrap" style="background:var(--purple-dim)">🌡️</div>
+      <div class="info">
+        <div class="name">Climate</div>
+        <div class="desc">Historical temperature averages for the location</div>
+      </div>
+    </div>
+    <div class="feature-item">
+      <div class="icon-wrap" style="background:var(--green-dim)">📍</div>
+      <div class="info">
+        <div class="name">Locations</div>
+        <div class="desc">Search cities worldwide, save favorites, GPS auto-detect</div>
+      </div>
+    </div>
+    <div class="feature-item">
+      <div class="icon-wrap" style="background:var(--amber-dim)">🌓</div>
+      <div class="info">
+        <div class="name">Dark / Light Mode</div>
+        <div class="desc">System-aware toggle with smooth animation</div>
+      </div>
+    </div>
+    <div class="feature-item">
+      <div class="icon-wrap" style="background:var(--red-dim)">🎨</div>
+      <div class="info">
+        <div class="name">39 Lottie Icons</div>
+        <div class="desc">Premium Meteocons animated weather icons</div>
+      </div>
+    </div>
+  </div>
+
+  <h3>Signup-Required Features</h3>
+  <div class="grid-2">
+    <div class="feature-item" style="border-color:var(--purple);">
+      <div class="icon-wrap" style="background:var(--purple-dim)">🤖</div>
+      <div class="info">
+        <div class="name">VayuGPT</div>
+        <div class="desc">AI weather assistant with streaming responses, multilingual support, weather-aware context</div>
+      </div>
+    </div>
+    <div class="feature-item" style="border-color:var(--accent);">
+      <div class="icon-wrap" style="background:var(--accent-dim)">🎤</div>
+      <div class="info">
+        <div class="name">Voice Chat</div>
+        <div class="desc">Speak in Bengali/Hindi/English → AI speaks back. Auto-send on silence.</div>
+      </div>
+    </div>
+    <div class="feature-item" style="border-color:var(--red);">
+      <div class="icon-wrap" style="background:var(--red-dim)">🚨</div>
+      <div class="info">
+        <div class="name">Vayu Alerts</div>
+        <div class="desc">AI-prioritized alarms with countdown, full-screen overlay, siren, safety guidance</div>
+      </div>
+    </div>
+    <div class="feature-item" style="border-color:var(--blue);">
+      <div class="icon-wrap" style="background:var(--blue-dim)">🔔</div>
+      <div class="info">
+        <div class="name">Push Notifications</div>
+        <div class="desc">Browser alerts (Zomato/Swiggy style), daily briefings</div>
+      </div>
+    </div>
+    <div class="feature-item" style="border-color:var(--green);">
+      <div class="icon-wrap" style="background:var(--green-dim)">👤</div>
+      <div class="info">
+        <div class="name">Profile</div>
+        <div class="desc">Account details, settings, sign out</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════ -->
+<!--                  9. DATABASE SCHEMA                        -->
+<!-- ════════════════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-title">
+    <span class="section-number blue">9</span>
+    Database Schema (Supabase / PostgreSQL)
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Table</th>
+          <th>Key Columns</th>
+          <th>Purpose</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>users</strong></td>
+          <td><code>id</code> <code>email</code> <code>password</code> <code>created_at</code></td>
+          <td>User accounts, authentication</td>
+        </tr>
+        <tr>
+          <td><strong>locations</strong></td>
+          <td><code>id</code> <code>user_id</code> <code>name</code> <code>lat</code> <code>lon</code> <code>is_default</code></td>
+          <td>Saved cities per user</td>
+        </tr>
+        <tr>
+          <td><strong>alerts</strong></td>
+          <td><code>id</code> <code>user_id</code> <code>location_id</code> <code>type</code> <code>threshold</code> <code>is_active</code></td>
+          <td>Custom threshold alerts</td>
+        </tr>
+        <tr>
+          <td><strong>alarms</strong></td>
+          <td><code>id</code> <code>user_id</code> <code>location_id</code> <code>severity</code> <code>status</code> <code>message</code> <code>countdown_sec</code> <code>acknowledged_at</code></td>
+          <td>AI-prioritized weather alarms</td>
+        </tr>
+        <tr>
+          <td><strong>push_subscriptions</strong></td>
+          <td><code>id</code> <code>user_id</code> <code>endpoint</code> <code>keys</code></td>
+          <td>Browser push notification endpoints</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════ -->
+<!--                 10. API ENDPOINTS                          -->
+<!-- ════════════════════════════════════════════════════════════ -->
+<div class="section page-break">
+  <div class="section-title">
+    <span class="section-number amber">10</span>
+    API Endpoints Map
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Module</th>
+          <th>Endpoint</th>
+          <th>Method</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td rowspan="3"><strong>Auth</strong></td>
+          <td><code>/api/v1/auth/register</code></td>
+          <td><span class="tag green">POST</span></td>
+          <td>Create new account</td>
+        </tr>
+        <tr>
+          <td><code>/api/v1/auth/login</code></td>
+          <td><span class="tag green">POST</span></td>
+          <td>Get JWT token</td>
+        </tr>
+        <tr>
+          <td><code>/api/v1/auth/me</code></td>
+          <td><span class="tag blue">GET</span></td>
+          <td>Get current user</td>
+        </tr>
+        <tr>
+          <td rowspan="2"><strong>Weather</strong></td>
+          <td><code>/api/v1/weather/current</code></td>
+          <td><span class="tag blue">GET</span></td>
+          <td>Current weather for location</td>
+        </tr>
+        <tr>
+          <td><code>/api/v1/weather/forecast</code></td>
+          <td><span class="tag blue">GET</span></td>
+          <td>7-day + hourly forecast</td>
+        </tr>
+        <tr>
+          <td rowspan="2"><strong>AI</strong></td>
+          <td><code>/api/v1/ai/chat</code></td>
+          <td><span class="tag green">POST</span></td>
+          <td>VayuGPT streaming chat (SSE)</td>
+        </tr>
+        <tr>
+          <td><code>/api/v1/ai/history</code></td>
+          <td><span class="tag blue">GET</span></td>
+          <td>Conversation history</td>
+        </tr>
+        <tr>
+          <td><strong>TTS</strong></td>
+          <td><code>/api/v1/tts/speak</code></td>
+          <td><span class="tag green">POST</span></td>
+          <td>Generate voice audio (Fish Audio)</td>
+        </tr>
+        <tr>
+          <td rowspan="3"><strong>Locations</strong></td>
+          <td><code>/api/v1/locations</code></td>
+          <td><span class="tag blue">GET</span></td>
+          <td>List saved locations</td>
+        </tr>
+        <tr>
+          <td><code>/api/v1/locations</code></td>
+          <td><span class="tag green">POST</span></td>
+          <td>Add new location</td>
+        </tr>
+        <tr>
+          <td><code>/api/v1/locations/:id</code></td>
+          <td><span class="tag red">DELETE</span></td>
+          <td>Remove location</td>
+        </tr>
+        <tr>
+          <td rowspan="3"><strong>Alarms</strong></td>
+          <td><code>/api/v1/alarms</code></td>
+          <td><span class="tag blue">GET</span></td>
+          <td>List active alarms</td>
+        </tr>
+        <tr>
+          <td><code>/api/v1/alarms/:id/ack</code></td>
+          <td><span class="tag green">POST</span></td>
+          <td>Acknowledge alarm</td>
+        </tr>
+        <tr>
+          <td><code>/api/v1/alarms/risk/:id</code></td>
+          <td><span class="tag blue">GET</span></td>
+          <td>Get risk status</td>
+        </tr>
+        <tr>
+          <td rowspan="3"><strong>Push</strong></td>
+          <td><code>/api/v1/push/subscribe</code></td>
+          <td><span class="tag green">POST</span></td>
+          <td>Subscribe to push notifications</td>
+        </tr>
+        <tr>
+          <td><code>/api/v1/push/unsubscribe</code></td>
+          <td><span class="tag green">POST</span></td>
+          <td>Unsubscribe from push</td>
+        </tr>
+        <tr>
+          <td><code>/api/v1/push/test</code></td>
+          <td><span class="tag green">POST</span></td>
+          <td>Send test notification</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════ -->
+<!--                 11. BACKGROUND JOBS                        -->
+<!-- ════════════════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-title">
+    <span class="section-number amber">11</span>
+    Background Scheduler Jobs
+  </div>
+
+  <div class="grid-3">
+    <div class="diagram-box red">
+      <div class="title">🚨 Alarm Engine</div>
+      <div class="desc">
+        <strong>Every 15 minutes</strong><br>
+        Checks weather for all user locations → detects dangerous conditions → creates alarms with countdown → triggers push notifications + alarm sounds
+      </div>
+    </div>
+    <div class="diagram-box amber">
+      <div class="title">⚡ Alert Engine</div>
+      <div class="desc">
+        <strong>Every 30 minutes</strong><br>
+        Checks custom user thresholds (temp > X, wind > Y, rain > Z%) → sends notifications when exceeded
+      </div>
+    </div>
+    <div class="diagram-box green">
+      <div class="title">📬 Daily Briefing</div>
+      <div class="desc">
+        <strong>Every 30 minutes</strong><br>
+        Checks each user's preferred briefing time → sends weather summary as push notification ("Good morning! Today: 32°C...")
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════ -->
+<!--                 12. VOICE SYSTEM                           -->
+<!-- ════════════════════════════════════════════════════════════ -->
+<div class="section page-break">
+  <div class="section-title">
+    <span class="section-number blue">12</span>
+    Voice System Architecture
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">🎤 Speech Recognition (Input)</div>
+      <ul style="margin:0.5rem 0 0">
+        <li>Web Speech API (browser native)</li>
+        <li><strong>Continuous mode</strong> — keeps listening</li>
+        <li>Accumulates all spoken text</li>
+        <li><strong>Silence auto-send</strong> — 2.5s silence = auto-send</li>
+        <li>Live transcript shown while speaking</li>
+        <li>Red pulsing indicator when active</li>
+        <li>Manual stop available (tap mic again)</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-title">🔊 Speech Synthesis (Output)</div>
+      <ul style="margin:0.5rem 0 0">
+        <li><strong>Fish Audio API</strong> — natural voices</li>
+        <li>Bengali voice: warm female (0.75x speed)</li>
+        <li>Hindi voice: clear male (0.85x speed)</li>
+        <li>English voice: default (1.0x speed)</li>
+        <li><strong>Auto-triggers</strong> when user spoke input</li>
+        <li>Manual "Read aloud" button on any message</li>
+        <li>Slower speed for rural clarity</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>Bengali Detection Rules</h3>
+  <div class="diagram-box blue">
+    <div class="title">How We Detect Bengali / Banglish Input</div>
+    <div class="desc" style="margin-top:0.4rem">
+      <strong>Unicode Bengali:</strong> Any character in 0980-09FF range → Bengali<br>
+      <strong>Banglish words:</strong> ami, ki, ache, hobe, kemon, bhalo, na, o, ebong, tarpor, khub, onek, chol, jao, dekho, bolo, bsha, brishti, gorom, thanda, batash<br>
+      <strong>Hindi words:</strong> hai, kya, bahut, accha, bura, garam, sardi, baarish, aaj, kal, din, raat, subah, dopahar, sham, mujhe, tumhe, hamare<br>
+      <strong>English:</strong> Everything else defaults to English
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════ -->
+<!--                 13. SIH JUDGE HIGHLIGHTS                   -->
+<!-- ════════════════════════════════════════════════════════════ -->
+<div class="section page-break">
+  <div class="section-title">
+    <span class="section-number red">13</span>
+    Why Vayu Varta Wins SIH 2026
+  </div>
+
+  <div class="grid-2">
+    <div class="feature-item" style="border-color:var(--red);">
+      <div class="icon-wrap" style="background:var(--red-dim)">🚨</div>
+      <div class="info">
+        <div class="name">1. "Before the Disaster"</div>
+        <div class="desc">Predictive alarms with countdown timers. Not reactive — PROACTIVE. Users get minutes to prepare.</div>
+      </div>
+    </div>
+    <div class="feature-item" style="border-color:var(--amber);">
+      <div class="icon-wrap" style="background:var(--amber-dim)">🧠</div>
+      <div class="info">
+        <div class="name">2. AI-Prioritized Alerts</div>
+        <div class="desc">No notification fatigue. Only alerts that actually matter to YOUR specific location.</div>
+      </div>
+    </div>
+    <div class="feature-item" style="border-color:var(--blue);">
+      <div class="icon-wrap" style="background:var(--blue-dim)">🗣️</div>
+      <div class="info">
+        <div class="name">3. Multilingual Voice</div>
+        <div class="desc">Bengali + Hindi + English. Rural users who can't type can SPEAK to the AI and hear answers.</div>
+      </div>
+    </div>
+    <div class="feature-item" style="border-color:var(--green);">
+      <div class="icon-wrap" style="background:var(--green-dim)">💸</div>
+      <div class="info">
+        <div class="name">4. Free & Open Stack</div>
+        <div class="desc">Open-Meteo (free), Supabase free tier, Gemini free tier. Runs on any phone/browser.</div>
+      </div>
+    </div>
+    <div class="feature-item" style="border-color:var(--purple);">
+      <div class="icon-wrap" style="background:var(--purple-dim)">🌾</div>
+      <div class="info">
+        <div class="name">5. Rural-First Design</div>
+        <div class="desc">Simple language, large animated icons, voice-first UX, works on low bandwidth.</div>
+      </div>
+    </div>
+    <div class="feature-item" style="border-color:var(--accent);">
+      <div class="icon-wrap" style="background:var(--accent-dim)">⚡</div>
+      <div class="info">
+        <div class="name">6. Full-Stack Product</div>
+        <div class="desc">React + FastAPI + Supabase + AI + Voice + Real-time streaming. Complete, working product.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════ -->
+<!--                 14. PROJECT STRUCTURE                      -->
+<!-- ════════════════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-title">
+    <span class="section-number green">14</span>
+    Project File Structure
+  </div>
+
+  <pre><code>Vayu Varta/
+├── backend/                          Python FastAPI Backend
+│   ├── main.py                       App entry + scheduler setup
+│   ├── config.py                     Settings & environment vars
+│   ├── database.py                   Supabase client
+│   ├── .env                          API keys (Supabase, Gemini, Fish Audio)
+│   ├── auth/                         JWT Authentication
+│   │   └── router.py                 Register + Login endpoints
+│   ├── weather/                      Open-Meteo Weather API
+│   │   ├── router.py                 Weather endpoints
+│   │   └── service.py                Weather data fetching
+│   ├── ai/                           VayuGPT AI Engine
+│   │   ├── router.py                 Chat + streaming endpoints
+│   │   └── service.py                Gemini AI + streaming logic
+│   ├── tts/                          Fish Audio Voice TTS
+│   │   ├── router.py                 TTS endpoint
+│   │   └── service.py                Language detection + voice
+│   ├── alarms/                       AI Weather Alarm System
+│   │   ├── router.py                 Alarm endpoints
+│   │   └── engine.py                 Risk evaluation engine
+│   ├── alerts/                       Threshold Alert System
+│   │   ├── router.py                 Alert endpoints
+│   │   └── engine.py                 Alert evaluation engine
+│   ├── locations/                    City Management
+│   │   └── router.py                 CRUD for saved locations
+│   ├── push/                         Web Push Notifications
+│   │   └── router.py                 Subscribe + send
+│   ├── notifications/                Daily Briefing Service
+│   │   └── service.py                Briefing scheduler
+│   └── schema.sql                    Database tables
+│
+├── frontend/                         React + TypeScript + Vite
+│   ├── src/
+│   │   ├── App.tsx                   Root app + Auth gate
+│   │   ├── pages/
+│   │   │   ├── Auth.tsx              Welcome + Login + Signup
+│   │   │   ├── Dashboard.tsx         Live weather dashboard
+│   │   │   ├── Forecast.tsx          7-day + hourly forecast
+│   │   │   ├── Assistant.tsx         VayuGPT AI chat page
+│   │   │   ├── Alarms.tsx            Weather alarm center
+│   │   │   ├── Alerts.tsx            Alert management
+│   │   │   ├── Climate.tsx           Historical climate data
+│   │   │   ├── Locations.tsx         City search & management
+│   │   │   ├── Notifications.tsx     Push notification settings
+│   │   │   └── Profile.tsx           User account page
+│   │   ├── components/
+│   │   │   ├── AppShell.tsx          Navigation + layout
+│   │   │   ├── SignupGate.tsx        Feature gating modal
+│   │   │   ├── Ambient.tsx           Background effects
+│   │   │   ├── WeatherIcon.tsx       Meteocons icon mapper
+│   │   │   └── ui/                   Reusable UI components
+│   │   ├── contexts/
+│   │   │   ├── AuthContext.tsx       User auth state
+│   │   │   ├── LocContext.tsx        Location + GPS state
+│   │   │   └── ThemeContext.tsx      Dark/Light mode
+│   │   ├── hooks/
+│   │   │   ├── useGeolocation.ts     Browser GPS hook
+│   │   │   ├── useSpeechRecognition.ts  Voice input hook
+│   │   │   ├── useSpeechSynthesis.ts    Voice output hook
+│   │   │   └── useWeatherAlarms.ts      Alarm state hook
+│   │   ├── api/
+│   │   │   ├── client.ts             Backend API client
+│   │   │   └── guestWeather.ts       Client-side weather for guests
+│   │   └── lib/
+│   │       └── utils.ts              Utility functions
+│   └── public/                       Static assets (logo, icons)
+│
+└── SIH_Blueprint_PDF.html            This document
+</code></pre>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════ -->
+<!--                 15. QUICK START                            -->
+<!-- ════════════════════════════════════════════════════════════ -->
+<div class="section page-break">
+  <div class="section-title">
+    <span class="section-number accent">15</span>
+    Quick Start Guide (For Demo)
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">🖥️ Terminal 1 — Backend</div>
+      <pre style="margin:0.5rem 0 0"><code>cd /d D:\NEW BACKEND\backend
+uvicorn main:app --reload --port 8000</code></pre>
+      <p style="margin:0.5rem 0 0; font-size:0.82rem">
+        ✅ API running at: <code>http://localhost:8000</code><br>
+        ✅ API docs at: <code>http://localhost:8000/docs</code>
+      </p>
+    </div>
+    <div class="card">
+      <div class="card-title">🖥️ Terminal 2 — Frontend</div>
+      <pre style="margin:0.5rem 0 0"><code>cd /d D:\NEW BACKEND\frontend
+npm run dev</code></pre>
+      <p style="margin:0.5rem 0 0; font-size:0.82rem">
+        ✅ Website at: <code>http://localhost:3000</code>
+      </p>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:0.8rem">
+    <div class="card-title">🔐 Login Credentials</div>
+    <div class="grid-2" style="margin-top:0.5rem">
+      <div>
+        <p style="margin:0"><strong>Email:</strong> <code>test@example.com</code></p>
+        <p style="margin:0"><strong>Password:</strong> <code>TestPass123!</code></p>
+      </div>
+      <div>
+        <p style="margin:0">Or click <strong>"Get Started Now"</strong> on the welcome page</p>
+        <p style="margin:0;font-size:0.82rem" class="muted">to explore as a guest (no signup needed).</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="highlight-box" style="margin-top:1rem">
+    <div class="card-title">🎯 Demo Flow for Judges</div>
+    <div class="desc" style="margin-top:0.4rem">
+      <strong>1.</strong> Open app → Welcome page with 3D robot<br>
+      <strong>2.</strong> Click "Get Started Now" → GPS auto-detects location<br>
+      <strong>3.</strong> Dashboard shows live weather with animated icons<br>
+      <strong>4.</strong> Navigate to VayuGPT → Ask "Will it rain tomorrow?" → Streaming AI response<br>
+      <strong>5.</strong> Click mic → Speak in Bengali → AI responds in Bengali voice<br>
+      <strong>6.</strong> Navigate to Vayu Alerts → Show alarm system with countdown<br>
+      <strong>7.</strong> Tap "Start Test Alarm" → Full-screen alarm with siren<br>
+      <strong>8.</strong> Show safety guidance → Acknowledge alarm
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════ -->
+<!--                       FOOTER                               -->
+<!-- ════════════════════════════════════════════════════════════ -->
+<div style="text-align:center; padding:3rem 2rem; color:var(--dim); font-size:0.82rem;">
+  <div style="font-size:1.4rem; margin-bottom:0.5rem;">🌦️</div>
+  <div style="font-weight:600; color:var(--muted); margin-bottom:0.3rem;">
+    Vayu Varta — AI Weather Intelligence Platform
+  </div>
+  <div>Smart India Hackathon 2026 · Workflow Blueprint v1.0</div>
+  <div style="margin-top:0.5rem; font-size:0.72rem;">
+    Generated with Codebuff 🤖
+  </div>
+</div>
+
+</div><!-- end .content -->
+
+</body>
+</html>

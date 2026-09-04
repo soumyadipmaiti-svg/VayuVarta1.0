@@ -1,0 +1,12 @@
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#4FD1C5"/>
+      <stop offset="100%" stop-color="#319795"/>
+    </linearGradient>
+  </defs>
+  <rect width="32" height="32" rx="8" fill="url(#bg)"/>
+  <path d="M23 14C23 14 23.5 10 20 8C16.5 6 13.5 7.5 12.5 9C11.5 7 8.5 6 6 8C3.5 10 4.5 14 4.5 14" stroke="white" stroke-width="2" stroke-linecap="round" fill="rgba(255,255,255,0.15)"/>
+  <ellipse cx="14" cy="16" rx="10" ry="6" fill="rgba(255,255,255,0.2)" stroke="white" stroke-width="1.5"/>
+  <text x="14" y="18" text-anchor="middle" fill="white" font-size="5.5" font-weight="700" font-family="Inter, sans-serif">VAYU</text>
+</svg>
