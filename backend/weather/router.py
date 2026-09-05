@@ -9,6 +9,7 @@ from database import get_supabase
 from weather.service import (
     get_current_weather,
     get_forecast,
+    get_stale_forecast,
     get_historical_averages,
     normalize_current,
     normalize_daily_forecast,
@@ -32,6 +33,23 @@ def _get_location(location_id: str) -> dict:
     if not result.data:
         raise HTTPException(status_code=404, detail="Location not found")
     return result.data
+
+
+def _stale_fetched_at(location_id: str, forecast_type: str) -> str:
+    """Timestamp of the newest cached forecast row (for the stale badge)."""
+    db = get_supabase()
+    row = (
+        db.table("forecasts")
+        .select("fetched_at")
+        .eq("location_id", location_id)
+        .eq("forecast_type", forecast_type)
+        .order("fetched_at", desc=True)
+        .limit(1)
+        .execute()
+    )
+    if row.data:
+        return str(row.data[0]["fetched_at"]).replace("T", " ").split(".")[0] + " UTC"
+    return "earlier"
 
 
 # ── GET /weather/geocode ──────────────────────────────────────────────────────
@@ -110,6 +128,39 @@ async def forecast(
     raw = await get_forecast(location, forecast_type=type)
 
     if raw is None:
+        # Open-Meteo unreachable (rate limit / outage) — serve the last good
+        # forecast from cache so users never see a hard error.
+        stale = get_stale_forecast(location_id, type)
+        if stale is not None:
+            fetched_at = _stale_fetched_at(location_id, type)
+            if type == "hourly":
+                hours = normalize_hourly_forecast(stale)
+                return {
+                    "type": "hourly",
+                    "hours": hours,
+                    "source": "Open-Meteo (cached)",
+                    "data_warning": (
+                        f"Live forecast is temporarily unavailable — showing the "
+                        f"last good forecast from {fetched_at}."
+                    ),
+                }
+            days = normalize_daily_forecast(stale)
+            response = {
+                "type": type,
+                "days": days,
+                "source": "Open-Meteo (cached)",
+                "data_warning": (
+                    f"Live forecast is temporarily unavailable — showing the "
+                    f"last good forecast from {fetched_at}."
+                ),
+            }
+            if type == "extended":
+                response["confidence_note"] = (
+                    "Extended Outlook — lower confidence. "
+                    "Accuracy decreases significantly beyond 7 days."
+                )
+            return response
+
         raise HTTPException(
             status_code=502,
             detail="Forecast data is currently unavailable. Please try again shortly.",

@@ -4,6 +4,7 @@ Fetches current conditions and forecasts from Open-Meteo (free, no API key) with
 """
 
 import httpx
+import asyncio
 import logging
 from datetime import datetime, timezone, timedelta
 
@@ -62,6 +63,84 @@ def _cache_cutoff() -> str:
     ).isoformat()
 
 
+# ── Open-Meteo fetch with retry + backoff ────────────────────────────────────
+
+async def _fetch_open_meteo_forecast(
+    params: dict, timeout: float = 15.0, max_attempts: int = 3
+) -> dict | None:
+    """
+    GET /forecast from Open-Meteo with retry + exponential backoff.
+
+    Render's free-tier shares its egress IP with thousands of other services,
+    so Open-Meteo intermittently answers 429 Too Many Requests. Waiting a
+    moment and retrying usually gets through — and if every attempt fails,
+    the caller falls back to stale cache instead of erroring at the user.
+    """
+    delays = [0.0, 1.0, 2.5]  # pause before retry 1 and 2
+    last_error: Exception | None = None
+
+    async with httpx.AsyncClient(timeout=timeout) as client:
+        for attempt in range(max_attempts):
+            if delays[attempt]:
+                await asyncio.sleep(delays[attempt])
+            try:
+                resp = await client.get(
+                    f"{settings.weather_api_base_url}/forecast", params=params
+                )
+                if resp.status_code == 429:
+                    last_error = httpx.HTTPStatusError(
+                        "429 Too Many Requests",
+                        request=resp.request,
+                        response=resp,
+                    )
+                    logger.warning(
+                        f"Open-Meteo 429 (attempt {attempt + 1}/{max_attempts}) — backing off"
+                    )
+                    continue
+                resp.raise_for_status()
+                return resp.json()
+            except httpx.HTTPStatusError as exc:
+                last_error = exc
+                if exc.response.status_code >= 500:
+                    logger.warning(
+                        f"Open-Meteo {exc.response.status_code} (attempt {attempt + 1}/{max_attempts}) — retrying"
+                    )
+                    continue
+                logger.error(f"Open-Meteo fetch failed: {exc}")
+                return None
+            except httpx.HTTPError as exc:
+                last_error = exc
+                logger.warning(
+                    f"Open-Meteo network error (attempt {attempt + 1}/{max_attempts}): {exc}"
+                )
+                continue
+            except Exception as exc:
+                logger.error(f"Unexpected error fetching Open-Meteo: {exc}")
+                return None
+
+    logger.error(f"Open-Meteo failed after {max_attempts} attempts: {last_error}")
+    return None
+
+
+def get_stale_forecast(location_id: str, forecast_type: str) -> dict | None:
+    """
+    Return the most recent cached forecast for a location, ignoring TTL.
+    Used when Open-Meteo is unreachable (rate limit / outage) so users still
+    see the last good forecast instead of an error.
+    """
+    db = get_supabase()
+    stale = (
+        db.table("forecasts")
+        .select("raw_json, fetched_at")
+        .eq("location_id", location_id)
+        .eq("forecast_type", forecast_type)
+        .order("fetched_at", desc=True)
+        .limit(1)
+        .execute()
+    )
+    return stale.data[0]["raw_json"] if stale.data else None
+
+
 # ── Current Weather ───────────────────────────────────────────────────────────
 
 async def get_current_weather(location: dict) -> dict | None:
@@ -87,43 +166,35 @@ async def get_current_weather(location: dict) -> dict | None:
         logger.debug(f"Cache hit for current weather: {location['name']}")
         return cached.data[0]["raw_json"]
 
-    # 2. Fetch from Open-Meteo
-    try:
-        async with httpx.AsyncClient(timeout=10) as client:
-            resp = await client.get(
-                f"{settings.weather_api_base_url}/forecast",
-                params={
-                    "latitude": location["latitude"],
-                    "longitude": location["longitude"],
-                    "current": ",".join([
-                        "temperature_2m",
-                        "relative_humidity_2m",
-                        "apparent_temperature",
-                        "precipitation",
-                        "weather_code",
-                        "cloud_cover",
-                        "wind_speed_10m",
-                        "wind_direction_10m",
-                        "pressure_msl",
-                        "is_day",
-                    ]),
-                    "daily": ",".join([
-                        "temperature_2m_max",
-                        "temperature_2m_min",
-                        "sunrise",
-                        "sunset",
-                    ]),
-                    "timezone": "auto",
-                    "forecast_days": 1,
-                },
-            )
-            resp.raise_for_status()
-            data = resp.json()
-    except httpx.HTTPError as exc:
-        logger.error(f"Open-Meteo current fetch failed [{location['name']}]: {exc}")
-        return None
-    except Exception as exc:
-        logger.error(f"Unexpected error in get_current_weather: {exc}")
+    # 2. Fetch from Open-Meteo (with retry/backoff for 429s)
+    data = await _fetch_open_meteo_forecast(
+        {
+            "latitude": location["latitude"],
+            "longitude": location["longitude"],
+            "current": ",".join([
+                "temperature_2m",
+                "relative_humidity_2m",
+                "apparent_temperature",
+                "precipitation",
+                "weather_code",
+                "cloud_cover",
+                "wind_speed_10m",
+                "wind_direction_10m",
+                "pressure_msl",
+                "is_day",
+            ]),
+            "daily": ",".join([
+                "temperature_2m_max",
+                "temperature_2m_min",
+                "sunrise",
+                "sunset",
+            ]),
+            "timezone": "auto",
+            "forecast_days": 1,
+        },
+        timeout=10,
+    )
+    if data is None:
         return None
 
     # Attach location metadata
@@ -204,19 +275,9 @@ async def get_forecast(location: dict, forecast_type: str = "daily") -> dict | N
             "is_day",
         ])
 
-    try:
-        async with httpx.AsyncClient(timeout=15) as client:
-            resp = await client.get(
-                f"{settings.weather_api_base_url}/forecast",
-                params=params,
-            )
-            resp.raise_for_status()
-            data = resp.json()
-    except httpx.HTTPError as exc:
-        logger.error(f"Open-Meteo forecast fetch failed [{location['name']}]: {exc}")
-        return None
-    except Exception as exc:
-        logger.error(f"Unexpected error in get_forecast: {exc}")
+    # 3. Fetch from Open-Meteo (with retry/backoff for 429s)
+    data = await _fetch_open_meteo_forecast(params, timeout=15)
+    if data is None:
         return None
 
     # Attach metadata
