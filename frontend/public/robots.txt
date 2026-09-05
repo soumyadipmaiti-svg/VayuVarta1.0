@@ -2,4 +2,4 @@ User-agent: *
 Allow: /
 Disallow: /api/
 
-Sitemap: https://vayuvarta.example.com/sitemap.xml
+Sitemap: https://vayu-varta1-0.vercel.app/sitemap.xml

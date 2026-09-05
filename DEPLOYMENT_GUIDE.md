@@ -97,7 +97,7 @@ build` → Publish `dist`. The `public/_redirects` file already fixes SPA routes
    - `SMTP_HOST=smtp.gmail.com`, `SMTP_PORT=587`, `SMTP_USER`, `SMTP_PASSWORD`
      (the fixed Gmail app password), `SMTP_FROM_NAME=Vayu Varta`
    - `VAPID_PRIVATE_KEY`, `VAPID_PUBLIC_KEY`, `VAPID_EMAIL`
-   - **`FRONTEND_URL` = your Vercel URL, e.g. `https://vayuvarta.vercel.app`**
+   - **`FRONTEND_URL` = `https://vayu-varta1-0.vercel.app`**
      ← this makes CORS work **and** makes the reset-link in emails point to
      your live site
    - **`APP_ENV=production`** ← locks CORS to your frontend only
@@ -108,7 +108,7 @@ build` → Publish `dist`. The `public/_redirects` file already fixes SPA routes
    `https://vayuvarta-api.onrender.com/health` every 5 min. (Your app's health
    endpoint exists — check `backend/main.py`.)
 6. **Go back to Vercel → Settings → Environment Variables** and set
-   `VITE_API_BASE=https://vayuvarta-api.onrender.com/api/v1`, then **Redeploy**.
+   `VITE_API_BASE=https://vayu-varta1-0.onrender.com/api/v1`, then **Redeploy**.
 
 ---
 
@@ -124,17 +124,43 @@ I added real SEO tags, but `og:image`, `canonical`, `sitemap.xml` and
 
 Then redeploy the frontend once.
 
+> Already done in this project — the domain is now `https://vayu-varta1-0.vercel.app`.
+
+## 3b. Real-production note
+
+If you later get a custom domain (e.g. `vayuvarta.com`), re-run the same search
+and replace **everywhere**:
+- `frontend/index.html` (canonical, og:image, og:url, JSON-LD)
+- `frontend/public/robots.txt`
+- `frontend/public/sitemap.xml`
+- `DEPLOYMENT_GUIDE.md`
+- `backend/.env` `FRONTEND_URL`
+- Render env var `FRONTEND_URL`
+- Vercel env var `VITE_API_BASE`
+
+Then redeploy both frontend and backend once.
+
 ---
 
 ## 4️⃣ GET INDEXED ON GOOGLE (free, ~1 week to first results)
 
+In this project the real domain is: **`https://vayu-varta1-0.vercel.app`**
+
 1. **Google Search Console:** https://search.google.com/search-console →
-   Add property → your Vercel URL → verify (easiest: DNS TXT record from Vercel
-   **Settings → Domains**, or paste the HTML file into `frontend/public/`).
+   Add property → your Vercel URL → verify.
+   Easiest verification for a free custom-less Vercel domain:
+   - Vercel → your project → Settings → Domains → copy the DNS TXT record values,
+     then in Search Console choose **DNS TXT record** verification → paste the
+     record Vercel gives you.
+   - If DNS verification fails on the free subdomain, use the **HTML file**
+     method: paste the HTML file Google gives you into
+     `frontend/public/google-site-verification-*.html`, then commit, push, and
+     click "Verify" in Search Console once Vercel redeploys.
 2. **Submit your sitemap:** Sitemaps → enter
-   `https://<your-domain>/sitemap.xml` → Submit.
+   `https://vayu-varta1-0.vercel.app/sitemap.xml` → Submit.
 3. Submit **robots.txt** check in the same console.
-4. **Request indexing:** URL Inspection → paste your homepage → **Request indexing**
+4. **Request indexing:** URL Inspection → paste
+   `https://vayu-varta1-0.vercel.app/` → **Request indexing**
    (do this again after every big update).
 5. Share the link on WhatsApp/Telegram groups, Facebook pages, and your SIH
    submission — backlinks help ranking a lot for a brand-new site.
