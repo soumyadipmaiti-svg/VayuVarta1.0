@@ -49,6 +49,8 @@ function SplineFallback() {
 
 // ─── RAF-throttled mouse forwarder ────────────────────────────────────
 // Uses requestAnimationFrame to cap at 60fps and avoid layout thrashing.
+// Starts on mount (before the lazy Spline chunk resolves) so the head-follow
+// is live the instant the canvas appears.
 function useSplineMouse(containerRef: React.RefObject<HTMLDivElement | null>) {
   const rafRef = useRef<number>(0);
   const pendingEvent = useRef<{ x: number; y: number } | null>(null);
@@ -122,13 +124,16 @@ function useSplineMouse(containerRef: React.RefObject<HTMLDivElement | null>) {
 interface SplineSceneProps {
   scene: string;
   className?: string;
+  /** Called once the 3D scene has fully loaded and is rendering. */
+  onLoad?: () => void;
 }
 
 // ─── Component ─────────────────────────────────────────────────────────
-export function SplineScene({ scene, className }: SplineSceneProps) {
+export function SplineScene({ scene, className, onLoad }: SplineSceneProps) {
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // RAF-throttled mouse forwarding to Spline
+  // RAF-throttled mouse forwarding to Spline — starts immediately on mount
+  // so the robot head-follow is live the instant the canvas renders.
   useSplineMouse(containerRef);
 
   return (
@@ -144,6 +149,7 @@ export function SplineScene({ scene, className }: SplineSceneProps) {
           <Spline
             scene={scene}
             className="w-full h-full"
+            onLoad={onLoad}
           />
         </Suspense>
       </SplineErrorBoundary>

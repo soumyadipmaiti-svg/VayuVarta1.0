@@ -119,12 +119,55 @@ export default function Auth() {
   const [loading, setLoading] = useState(false);
   const [showLoading, setShowLoading] = useState(true);
   const [ready, setReady] = useState(false);
+  // Guards so the splash never hides before the minimum timer elapses.
+  const minSplashDoneRef = useRef(false);
+  const splashHiddenRef = useRef(false);
+  // Ref mirrors of desktop + spline load so callbacks stay stable (the
+  // LoadingScreen restarts its progress interval if onComplete changes).
   const isDesktop = useIsDesktop();
+  const isDesktopRef = useRef(isDesktop);
+  const splineLoadedRef = useRef(false);
+  useEffect(() => {
+    isDesktopRef.current = isDesktop;
+  }, [isDesktop]);
 
-  const handleLoadingComplete = useCallback(() => {
+  // Hides the splash. Only ever runs once.
+  const finishSplash = useCallback(() => {
+    if (splashHiddenRef.current) return;
+    splashHiddenRef.current = true;
     setShowLoading(false);
     setTimeout(() => setReady(true), 100);
   }, []);
+
+  // Called by the LoadingScreen when its progress bar reaches 100%.
+  const handleLoadingComplete = useCallback(() => {
+    minSplashDoneRef.current = true;
+    // Mobile has no 3D scene — hide right away. Desktop waits for the
+    // spline's onLoad (via the refs) so the scene is ready when we fade.
+    if (!isDesktopRef.current || splineLoadedRef.current) {
+      finishSplash();
+    }
+  }, [finishSplash]);
+
+  // Called by SplineScene once the 3D scene finished loading.
+  const handleSplineLoad = useCallback(() => {
+    splineLoadedRef.current = true;
+    // If the min splash timer already elapsed, hide now — the scene is warm.
+    if (minSplashDoneRef.current) {
+      finishSplash();
+    }
+  }, [finishSplash]);
+
+  // Never trap the user on the splash — force-hide after 8s even if the
+  // 3D scene is still loading (slow network, blocked CDN, etc.).
+  useEffect(() => {
+    if (!isDesktop) return;
+    const t = setTimeout(() => {
+      minSplashDoneRef.current = true;
+      finishSplash();
+    }, 8000);
+    return () => clearTimeout(t);
+  }, [isDesktop, finishSplash]);
 
   // ── Explorer mode (Get Started without signup) ──
   const enterExplorer = () => {
@@ -425,11 +468,14 @@ export default function Auth() {
           {showLoading && <LoadingScreen onComplete={handleLoadingComplete} />}
         </AnimatePresence>
 
-        {/* 3D Spline (left half) */}
+        {/* 3D Spline (left half). Mounted IMMEDIATELY — the loading screen
+          (z-[100]) covers it while it warms up, so by the time the splash
+          fades the scene is already rendered. No empty half, no flicker. */}
         <div className="absolute top-0 left-0 z-[1] h-full w-[55%]">
           <SplineScene
             scene="https://prod.spline.design/kZDDjO5HuC9GJUM2/scene.splinecode"
             className="w-full h-full"
+            onLoad={handleSplineLoad}
           />
         </div>
 
