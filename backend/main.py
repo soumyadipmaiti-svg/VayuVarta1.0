@@ -81,7 +81,9 @@ async def lifespan(app: FastAPI):
 
 # ── App ───────────────────────────────────────────────────────────────────────
 app = FastAPI(
-    title="WeatherGPT API",
+    title="VayuVarta API",
+    docs_url="/docs",
+    redoc_url="/redoc",
     description=(
         "AI-Powered Weather Forecasting, Alerts & Climate Intelligence Platform. "
         "Features: Real-time weather, Gemini AI chat, threshold alerts, "

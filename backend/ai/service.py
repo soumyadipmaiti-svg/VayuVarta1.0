@@ -27,8 +27,8 @@ try:
         genai.configure(api_key=settings.gemini_api_key)
         # Try models in order of preference — newest available first
         _model_candidates = [
+            settings.gemini_model,  # from .env — primary (gemini-3.5-flash)
             "gemini-3.5-flash-lite",
-            settings.gemini_model,  # from .env
             "gemini-2.0-flash-lite",
             "gemini-1.5-flash",
         ]

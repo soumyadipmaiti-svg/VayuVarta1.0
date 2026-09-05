@@ -33,7 +33,7 @@ class Settings(BaseSettings):
 
     # ── Google Gemini AI ──────────────────────────────────────────────────────
     gemini_api_key: str = Field(..., alias="GEMINI_API_KEY")
-    gemini_model: str = Field("gemini-1.5-flash", alias="GEMINI_MODEL")
+    gemini_model: str = Field("gemini-3.5-flash", alias="GEMINI_MODEL")
     ai_max_conversation_turns: int = 10
 
     # ── Web Push / VAPID Keys (Browser Push Notifications) ───────────────────
