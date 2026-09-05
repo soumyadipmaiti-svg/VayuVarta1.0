@@ -158,6 +158,12 @@ export default function Auth() {
     }
   }, [finishSplash]);
 
+  // Called by SplineScene when the 3D scene can't load at all (network
+  // failure, blocked CDN). Don't hold the splash waiting for it.
+  const handleSplineFail = useCallback(() => {
+    finishSplash();
+  }, [finishSplash]);
+
   // Never trap the user on the splash — force-hide after 8s even if the
   // 3D scene is still loading (slow network, blocked CDN, etc.).
   useEffect(() => {
@@ -476,6 +482,7 @@ export default function Auth() {
             scene="https://prod.spline.design/kZDDjO5HuC9GJUM2/scene.splinecode"
             className="w-full h-full"
             onLoad={handleSplineLoad}
+            onFail={handleSplineFail}
           />
         </div>
 

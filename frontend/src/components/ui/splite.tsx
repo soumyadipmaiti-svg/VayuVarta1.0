@@ -1,9 +1,16 @@
 'use client'
 
-import { Suspense, lazy, useRef, useEffect, useCallback, Component, type ReactNode } from 'react'
+import { Suspense, lazy, useRef, useState, useEffect, useCallback, Component, type ReactNode } from 'react'
 
 // Lazy load Spline — only loaded when component mounts
 const Spline = lazy(() => import('@splinetool/react-spline'))
+
+// ─── Tuning ────────────────────────────────────────────────────────────
+// How long to wait for the 3D scene before giving up and hiding gracefully.
+const SCENE_TIMEOUT = 10000
+// Total mount attempts (1 original + 1 retry). Transient CDN/network
+// hiccups almost always succeed on the retry.
+const MAX_ATTEMPTS = 2
 
 // ─── Error Boundary ────────────────────────────────────────────────────
 interface ErrorBoundaryState {
@@ -11,10 +18,10 @@ interface ErrorBoundaryState {
 }
 
 class SplineErrorBoundary extends Component<
-  { children: ReactNode; fallback?: ReactNode },
+  { children: ReactNode; fallback?: ReactNode; onError?: () => void },
   ErrorBoundaryState
 > {
-  constructor(props: { children: ReactNode; fallback?: ReactNode }) {
+  constructor(props: { children: ReactNode; fallback?: ReactNode; onError?: () => void }) {
     super(props);
     this.state = { hasError: false };
   }
@@ -25,6 +32,7 @@ class SplineErrorBoundary extends Component<
 
   componentDidCatch(error: Error) {
     console.warn('SplineScene failed to load:', error.message);
+    this.props.onError?.();
   }
 
   render() {
@@ -126,15 +134,53 @@ interface SplineSceneProps {
   className?: string;
   /** Called once the 3D scene has fully loaded and is rendering. */
   onLoad?: () => void;
+  /** Called when the scene can't load (after retries / timeout). */
+  onFail?: () => void;
 }
 
 // ─── Component ─────────────────────────────────────────────────────────
-export function SplineScene({ scene, className, onLoad }: SplineSceneProps) {
+export function SplineScene({ scene, className, onLoad, onFail }: SplineSceneProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  // Retry counter — bumping it remounts the boundary + Spline fresh.
+  const [attempt, setAttempt] = useState(0);
+  // Terminal states: we either gave up after retries, or the scene hung.
+  const [gaveUp, setGaveUp] = useState(false);
+  const [timedOut, setTimedOut] = useState(false);
+  const loadedRef = useRef(false);
 
   // RAF-throttled mouse forwarding to Spline — starts immediately on mount
   // so the robot head-follow is live the instant the canvas renders.
   useSplineMouse(containerRef);
+
+  const handleLoad = useCallback(() => {
+    loadedRef.current = true;
+    onLoad?.();
+  }, [onLoad]);
+
+  const handleError = useCallback(() => {
+    // Transient CDN/network failures often succeed on a fresh mount.
+    if (attempt < MAX_ATTEMPTS - 1) {
+      setAttempt((a) => a + 1);
+    } else {
+      setGaveUp(true);
+    }
+  }, [attempt]);
+
+  // Watchdog — if the scene silently hangs (never loads, never errors),
+  // stop showing the spinner so the page never looks broken.
+  useEffect(() => {
+    if (gaveUp || loadedRef.current) return;
+    const t = setTimeout(() => setTimedOut(true), SCENE_TIMEOUT);
+    return () => clearTimeout(t);
+  }, [attempt, gaveUp]);
+
+  // Tell the parent we're done trying (lets the splash hide early).
+  useEffect(() => {
+    if (gaveUp || timedOut) onFail?.();
+  }, [gaveUp, timedOut, onFail]);
+
+  // Graceful end — the dark page background takes over, no broken UI.
+  if (gaveUp || timedOut) return null;
 
   return (
     <div
@@ -143,13 +189,15 @@ export function SplineScene({ scene, className, onLoad }: SplineSceneProps) {
       style={{ pointerEvents: 'auto' }}
     >
       <SplineErrorBoundary
+        key={attempt}
         fallback={<SplineFallback />}
+        onError={handleError}
       >
         <Suspense fallback={<SplineFallback />}>
           <Spline
             scene={scene}
             className="w-full h-full"
-            onLoad={onLoad}
+            onLoad={handleLoad}
           />
         </Suspense>
       </SplineErrorBoundary>
