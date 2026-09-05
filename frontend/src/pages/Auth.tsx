@@ -6,10 +6,15 @@ import { Spotlight } from '../components/ui/spotlight';
 import { ArrowRight, Cloud, Sun, Wind, Sparkles, ChevronRight } from 'lucide-react';
 
 // ─── Loading Screen ────────────────────────────────────────────────────
+// Takes ~5 seconds to complete (progress += 0.5 every 25ms = 200 ticks).
+// This gives the 3D Spline scene enough time to preload its 2 MB chunk
+// and scene file behind the splash so it's ready when we fade.
 function LoadingScreen({ onComplete }: { onComplete: () => void }) {
   const [progress, setProgress] = useState(0);
   const [messageIndex, setMessageIndex] = useState(0);
   const completedRef = useRef(false);
+  const onCompleteRef = useRef(onComplete);
+  onCompleteRef.current = onComplete;
 
   const messages = [
     'Perfection takes a moment',
@@ -19,15 +24,16 @@ function LoadingScreen({ onComplete }: { onComplete: () => void }) {
     'Worth the wait',
   ];
 
+  // Use ref for onComplete so the interval never restarts on re-render.
   useEffect(() => {
     const interval = setInterval(() => {
       setProgress((p) => {
-        const next = p + 1.5;
+        const next = p + 0.5;
         if (next >= 100) {
           clearInterval(interval);
           if (!completedRef.current) {
             completedRef.current = true;
-            setTimeout(onComplete, 300);
+            setTimeout(() => onCompleteRef.current(), 300);
           }
           return 100;
         }
@@ -35,7 +41,7 @@ function LoadingScreen({ onComplete }: { onComplete: () => void }) {
       });
     }, 25);
     return () => clearInterval(interval);
-  }, [onComplete]);
+  }, []);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -119,66 +125,69 @@ export default function Auth() {
   const [loading, setLoading] = useState(false);
   const [showLoading, setShowLoading] = useState(true);
   const [ready, setReady] = useState(false);
-  // Guards so the splash never hides before the minimum timer elapses.
-  const minSplashDoneRef = useRef(false);
-  const splashHiddenRef = useRef(false);
-  // Ref mirrors of desktop + spline load so callbacks stay stable (the
-  // LoadingScreen restarts its progress interval if onComplete changes).
-  const isDesktop = useIsDesktop();
-  const isDesktopRef = useRef(isDesktop);
-  const splineLoadedRef = useRef(false);
-  useEffect(() => {
-    isDesktopRef.current = isDesktop;
-  }, [isDesktop]);
 
-  // Hides the splash. Only ever runs once.
-  const finishSplash = useCallback(() => {
+  const isDesktop = useIsDesktop();
+
+  // ── Splash gating refs ──────────────────────────────────────────────
+  // The splash only hides when ALL of these are true:
+  //   1. Loading screen finished (minSplashDoneRef)
+  //   2. Spline scene loaded OR failed (splineLoadedRef | splineFailedRef)
+  // This eliminates every race condition — no empty half, no spinner flash.
+  const minSplashDoneRef = useRef(false);
+  const splineLoadedRef = useRef(false);
+  const splineFailedRef = useRef(false);
+  const splashHiddenRef = useRef(false);
+
+  // Single gate — called by every callback. Only proceeds when both the
+  // loading screen AND the 3D scene have reached a terminal state.
+  const checkAndReveal = useCallback(() => {
     if (splashHiddenRef.current) return;
+    if (!minSplashDoneRef.current) return;
+    if (!splineLoadedRef.current && !splineFailedRef.current) return;
     splashHiddenRef.current = true;
     setShowLoading(false);
     setTimeout(() => setReady(true), 100);
   }, []);
 
-  // Called by the LoadingScreen when its progress bar reaches 100%.
+  // Called by LoadingScreen when its progress bar reaches 100% (~5s).
   const handleLoadingComplete = useCallback(() => {
     minSplashDoneRef.current = true;
-    // Mobile has no 3D scene — hide right away. Desktop waits for the
-    // spline's onLoad (via the refs) so the scene is ready when we fade.
-    if (!isDesktopRef.current || splineLoadedRef.current) {
-      finishSplash();
+    // Mobile has no 3D scene — reveal immediately.
+    if (!isDesktop) {
+      checkAndReveal();
     }
-  }, [finishSplash]);
+    // Desktop: wait for checkAndReveal to fire once spline resolves/fails.
+  }, [isDesktop, checkAndReveal]);
 
   // Called by SplineScene once the 3D scene finished loading.
   const handleSplineLoad = useCallback(() => {
     splineLoadedRef.current = true;
-    // If the min splash timer already elapsed, hide now — the scene is warm.
-    if (minSplashDoneRef.current) {
-      finishSplash();
-    }
-  }, [finishSplash]);
+    checkAndReveal();
+  }, [checkAndReveal]);
 
-  // Called by SplineScene when the 3D scene can't load at all (network
-  // failure, blocked CDN). Don't hold the splash waiting for it.
+  // Called by SplineScene when the 3D scene can't load at all (after
+  // retries / timeout). Do NOT reveal immediately — wait for the loading
+  // screen to finish so the form is also ready.
   const handleSplineFail = useCallback(() => {
-    finishSplash();
-  }, [finishSplash]);
+    splineFailedRef.current = true;
+    checkAndReveal();
+  }, [checkAndReveal]);
 
-  // Never trap the user on the splash — force-hide after 8s even if the
-  // 3D scene is still loading (slow network, blocked CDN, etc.).
+  // Safety net — never trap the user on the splash screen.
+  // 15s is generous (loading screen = 5s, 3 spline retries ≈ 8-10s max).
   useEffect(() => {
     if (!isDesktop) return;
     const t = setTimeout(() => {
       minSplashDoneRef.current = true;
-      finishSplash();
-    }, 8000);
+      splineFailedRef.current = true;
+      checkAndReveal();
+    }, 15000);
     return () => clearTimeout(t);
-  }, [isDesktop, finishSplash]);
+  }, [isDesktop, checkAndReveal]);
 
   // ── Explorer mode (Get Started without signup) ──
   const enterExplorer = () => {
     localStorage.setItem('vayu_explorer', '1');
-    // Reload to trigger App to show main app in explorer mode
     window.location.reload();
   };
 
@@ -192,7 +201,6 @@ export default function Auth() {
         localStorage.removeItem('vayu_explorer');
       } else {
         await register(name, email, password);
-        // Auto-login after registration
         await login(email, password);
         localStorage.removeItem('vayu_explorer');
       }
@@ -205,8 +213,6 @@ export default function Auth() {
   const d = (base: number) => (ready ? base : 999);
 
   // ── Mouse glow (desktop only) — TRAILING light behind cursor ──
-  // Very heavy mass + very low stiffness = glow always lags behind cursor
-  // The spring physics create a visible trail effect
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
   const glowX = useSpring(mouseX, { mass: 1.4, stiffness: 50, damping: 12 });
@@ -215,7 +221,6 @@ export default function Auth() {
 
   useEffect(() => {
     if (!isDesktop) return;
-    // Direct mouse tracking — spring handles all smoothing/trailing
     const handleMove = (e: MouseEvent) => {
       mouseX.set(e.clientX);
       mouseY.set(e.clientY);
@@ -475,8 +480,9 @@ export default function Auth() {
         </AnimatePresence>
 
         {/* 3D Spline (left half). Mounted IMMEDIATELY — the loading screen
-          (z-[100]) covers it while it warms up, so by the time the splash
-          fades the scene is already rendered. No empty half, no flicker. */}
+          (z-[100]) covers it while it warms up. The splash only fades once
+          BOTH the loading screen finishes AND the scene is loaded (or gave up
+          after 3 retries). No empty half, no flicker, no spinner flash. */}
         <div className="absolute top-0 left-0 z-[1] h-full w-[55%]">
           <SplineScene
             scene="https://prod.spline.design/kZDDjO5HuC9GJUM2/scene.splinecode"
@@ -498,7 +504,6 @@ export default function Auth() {
             className="fixed pointer-events-none z-[4]"
             style={{ left: glowX, top: glowY, x: '-50%', y: '-50%' }}
           >
-            {/* Outer ambient light — large, soft halo */}
             <div className="rounded-full" style={{
               width: 700, height: 700,
               background: 'radial-gradient(circle, rgba(61,156,255,0.06) 0%, rgba(79,209,197,0.03) 30%, transparent 65%)',
@@ -506,7 +511,6 @@ export default function Auth() {
               transform: 'translate(-50%, -50%)', position: 'absolute', left: '50%', top: '50%',
               willChange: 'transform',
             }} />
-            {/* Mid glow — visible trailing light */}
             <div className="rounded-full" style={{
               width: 350, height: 350,
               background: 'radial-gradient(circle, rgba(255,255,255,0.12) 0%, rgba(79,209,197,0.06) 35%, transparent 70%)',
@@ -514,7 +518,6 @@ export default function Auth() {
               transform: 'translate(-50%, -50%)', position: 'absolute', left: '50%', top: '50%',
               willChange: 'transform',
             }} />
-
           </motion.div>
         )}
 
@@ -544,12 +547,10 @@ export default function Auth() {
         {showLoading && <LoadingScreen onComplete={handleLoadingComplete} />}
       </AnimatePresence>
 
-      {/* Background gradient */}
       <div className="absolute inset-0 z-0 pointer-events-none" style={{
         background: 'linear-gradient(135deg, rgba(61,156,255,0.05) 0%, transparent 50%, rgba(125,184,232,0.03) 100%)'
       }} />
 
-      {/* Content — centered vertically in full viewport */}
       <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-5">
         <motion.div
           className="w-full max-w-sm"
