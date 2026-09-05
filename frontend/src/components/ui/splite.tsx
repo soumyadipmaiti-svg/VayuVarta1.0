@@ -7,13 +7,14 @@ const Spline = lazy(() => import('@splinetool/react-spline'))
 
 // ─── Tuning ────────────────────────────────────────────────────────────
 // Global timeout — if the scene hasn't loaded after this many ms from
-// mount, we give up regardless of how many attempts remain.
-const SCENE_TIMEOUT = 12000
-// Total mount attempts (1 original + 2 retries).  Transient CDN hiccups
-// almost always succeed within 2 retries.
-const MAX_ATTEMPTS = 3
-// Delay between retry attempts so the CDN has time to recover.
-const RETRY_DELAY_MS = 2000
+// mount, we retry (the scene is served locally now, so a hang is a
+// one-off network blip, not a permanent condition).
+const SCENE_TIMEOUT = 8000
+// Total mount attempts (1 original + 9 retries).  The scene is self-hosted
+// so failures are extremely rare — retry generously.
+const MAX_ATTEMPTS = 10
+// Delay between retry attempts so the network has time to recover.
+const RETRY_DELAY_MS = 1500
 
 // ─── Error Boundary ────────────────────────────────────────────────────
 interface ErrorBoundaryState {
@@ -162,9 +163,8 @@ export function SplineScene({ scene, className, onLoad, onFail }: SplineScenePro
   // Retry counter — bumping it remounts the boundary + Spline fresh.
   const [attempt, setAttempt] = useState(0)
   const attemptRef = useRef(0)
-  // Terminal states: we either gave up after retries, or the scene hung.
+  // Terminal state: we gave up only after every retry was exhausted.
   const [gaveUp, setGaveUp] = useState(false)
-  const [timedOut, setTimedOut] = useState(false)
   const loadedRef = useRef(false)
   const failedRef = useRef(false)
 
@@ -184,15 +184,9 @@ export function SplineScene({ scene, className, onLoad, onFail }: SplineScenePro
     onLoad?.()
   }, [onLoad])
 
-  const handleError = useCallback(() => {
-    // Prevent multiple error handlers from stacking (error boundary can
-    // fire onError more than once during rapid remounts).
-    if (failedRef.current) return
-    failedRef.current = true
-
+  // Retry helper — shared by error and hang paths.
+  const scheduleRetry = useCallback(() => {
     if (attemptRef.current < MAX_ATTEMPTS - 1) {
-      // Wait RETRY_DELAY_MS before the next attempt so the CDN has time
-      // to recover from a transient 429 / timeout.
       setTimeout(() => {
         attemptRef.current += 1
         failedRef.current = false
@@ -203,22 +197,35 @@ export function SplineScene({ scene, className, onLoad, onFail }: SplineScenePro
     }
   }, [])
 
+  const handleError = useCallback(() => {
+    // Prevent multiple error handlers from stacking (error boundary can
+    // fire onError more than once during rapid remounts).
+    if (failedRef.current) return
+    failedRef.current = true
+    scheduleRetry()
+  }, [scheduleRetry])
+
   // Global watchdog — if the scene silently hangs (never loads, never
-  // errors), force-give-up after SCENE_TIMEOUT.
+  // errors), treat it as a failure and retry, same as an error.
   useEffect(() => {
     if (gaveUp || loadedRef.current) return
-    const t = setTimeout(() => setTimedOut(true), SCENE_TIMEOUT)
+    const t = setTimeout(() => {
+      if (failedRef.current) return // an error retry is already pending
+      failedRef.current = true
+      scheduleRetry()
+    }, SCENE_TIMEOUT)
     return () => clearTimeout(t)
-  }, [attempt, gaveUp])
+  }, [attempt, gaveUp, scheduleRetry])
 
-  // Tell the parent we're done trying (lets the splash hide early).
+  // Tell the parent only when we've exhausted every retry — by then the
+  // Auth page's own 25s absolute cap will have revealed anyway.
   useEffect(() => {
-    if (gaveUp || timedOut) onFail?.()
-  }, [gaveUp, timedOut, onFail])
+    if (gaveUp) onFail?.()
+  }, [gaveUp, onFail])
 
   // If we gave up, show a polished dark gradient fallback — never null,
   // so the left half of the page never looks broken or empty.
-  if (gaveUp || timedOut) return <SplineFallback />
+  if (gaveUp) return <SplineFallback />
 
   return (
     <div

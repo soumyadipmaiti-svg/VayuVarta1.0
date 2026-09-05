@@ -127,37 +127,40 @@ export default function Auth() {
   const [ready, setReady] = useState(false);
 
   const isDesktop = useIsDesktop();
+  const isDesktopRef = useRef(isDesktop);
+  useEffect(() => {
+    isDesktopRef.current = isDesktop;
+  }, [isDesktop]);
 
   // ── Splash gating refs ──────────────────────────────────────────────
-  // The splash only hides when ALL of these are true:
+  // The splash ONLY hides when BOTH are true on desktop:
   //   1. Loading screen finished (minSplashDoneRef)
-  //   2. Spline scene loaded OR failed (splineLoadedRef | splineFailedRef)
-  // This eliminates every race condition — no empty half, no spinner flash.
+  //   2. 3D spline ACTUALLY loaded and rendering (splineLoadedRef)
+  // The login / get-started interface NEVER appears without the robot.
+  // (Mobile has no 3D scene, so it reveals on the timer alone.)
   const minSplashDoneRef = useRef(false);
   const splineLoadedRef = useRef(false);
-  const splineFailedRef = useRef(false);
   const splashHiddenRef = useRef(false);
 
-  // Single gate — called by every callback. Only proceeds when both the
-  // loading screen AND the 3D scene have reached a terminal state.
+  // Single gate — called by every callback. On desktop it refuses to
+  // reveal until the spline has really rendered, eliminating the
+  // "page shows before the robot" glitch permanently.
   const checkAndReveal = useCallback(() => {
     if (splashHiddenRef.current) return;
     if (!minSplashDoneRef.current) return;
-    if (!splineLoadedRef.current && !splineFailedRef.current) return;
+    // Desktop MUST have the 3D scene visible before showing the UI.
+    if (isDesktopRef.current && !splineLoadedRef.current) return;
     splashHiddenRef.current = true;
     setShowLoading(false);
     setTimeout(() => setReady(true), 100);
   }, []);
 
-  // Called by LoadingScreen when its progress bar reaches 100% (~5s).
+  // Called by LoadingScreen when its progress bar reaches 100% (~2.5s).
   const handleLoadingComplete = useCallback(() => {
     minSplashDoneRef.current = true;
-    // Mobile has no 3D scene — reveal immediately.
-    if (!isDesktop) {
-      checkAndReveal();
-    }
-    // Desktop: wait for checkAndReveal to fire once spline resolves/fails.
-  }, [isDesktop, checkAndReveal]);
+    // checkAndReveal decides: mobile reveals now, desktop waits for spline.
+    checkAndReveal();
+  }, [checkAndReveal]);
 
   // Called by SplineScene once the 3D scene finished loading.
   const handleSplineLoad = useCallback(() => {
@@ -165,25 +168,26 @@ export default function Auth() {
     checkAndReveal();
   }, [checkAndReveal]);
 
-  // Called by SplineScene when the 3D scene can't load at all (after
-  // retries / timeout). Do NOT reveal immediately — wait for the loading
-  // screen to finish so the form is also ready.
+  // Called by SplineScene when it definitively gave up (all retries
+  // exhausted). We do NOT reveal the login UI on failure — the robot
+  // must be on screen first. The SplineScene keeps retrying on its own;
+  // this only logs and lets the 25s absolute cap decide.
   const handleSplineFail = useCallback(() => {
-    splineFailedRef.current = true;
-    checkAndReveal();
-  }, [checkAndReveal]);
+    // Intentionally no reveal — interface stays hidden until robot shows.
+  }, []);
 
-  // Safety net — never trap the user on the splash screen.
-  // 15s is generous (loading screen = 5s, 3 spline retries ≈ 8-10s max).
+  // Absolute safety cap — never trap the user forever. 25s is far beyond
+  // what the locally-hosted scene needs (loads in <1s), so this only ever
+  // fires in a catastrophic network outage as a last resort.
   useEffect(() => {
-    if (!isDesktop) return;
     const t = setTimeout(() => {
       minSplashDoneRef.current = true;
-      splineFailedRef.current = true;
-      checkAndReveal();
-    }, 15000);
+      splashHiddenRef.current = true;
+      setShowLoading(false);
+      setTimeout(() => setReady(true), 100);
+    }, 25000);
     return () => clearTimeout(t);
-  }, [isDesktop, checkAndReveal]);
+  }, []);
 
   // ── Explorer mode (Get Started without signup) ──
   const enterExplorer = () => {
