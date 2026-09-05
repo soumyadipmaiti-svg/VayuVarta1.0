@@ -6,9 +6,9 @@ import { Spotlight } from '../components/ui/spotlight';
 import { ArrowRight, Cloud, Sun, Wind, Sparkles, ChevronRight } from 'lucide-react';
 
 // ─── Loading Screen ────────────────────────────────────────────────────
-// Takes ~5 seconds to complete (progress += 0.5 every 25ms = 200 ticks).
-// This gives the 3D Spline scene enough time to preload its 2 MB chunk
-// and scene file behind the splash so it's ready when we fade.
+// Takes ~2.5 seconds to complete (progress += 1.0 every 25ms = 100 ticks).
+// The 3D scene is now served locally (/scene.splinecode) so it loads in
+// milliseconds from our own CDN — the splash is just a quick polish.
 function LoadingScreen({ onComplete }: { onComplete: () => void }) {
   const [progress, setProgress] = useState(0);
   const [messageIndex, setMessageIndex] = useState(0);
@@ -28,7 +28,7 @@ function LoadingScreen({ onComplete }: { onComplete: () => void }) {
   useEffect(() => {
     const interval = setInterval(() => {
       setProgress((p) => {
-        const next = p + 0.5;
+        const next = p + 1.0;
         if (next >= 100) {
           clearInterval(interval);
           if (!completedRef.current) {
@@ -485,7 +485,7 @@ export default function Auth() {
           after 3 retries). No empty half, no flicker, no spinner flash. */}
         <div className="absolute top-0 left-0 z-[1] h-full w-[55%]">
           <SplineScene
-            scene="https://prod.spline.design/kZDDjO5HuC9GJUM2/scene.splinecode"
+            scene="/scene.splinecode"
             className="w-full h-full"
             onLoad={handleSplineLoad}
             onFail={handleSplineFail}

@@ -216,7 +216,7 @@ export default function Profile() {
             <div className="hidden lg:block w-52 h-52 xl:w-60 xl:h-60 flex-shrink-0 relative lg:mr-[9%] xl:mr-[13%] 2xl:mr-[15%]">
               <div className="absolute inset-0 rounded-full bg-accent-500/10 blur-2xl" />
               <SplineScene
-                scene="https://prod.spline.design/kZDDjO5HuC9GJUM2/scene.splinecode"
+                scene="/scene.splinecode"
                 className="w-full h-full"
               />
             </div>
