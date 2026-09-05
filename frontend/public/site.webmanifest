@@ -1,0 +1,26 @@
+{
+  "name": "Vayu Varta — AI Weather Intelligence & Early Warning System",
+  "short_name": "Vayu Varta",
+  "description": "AI-powered weather app for India with live forecasts, GPS auto-detection, Bengali & Hindi voice assistant, and AI-prioritized early warnings.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#05070B",
+  "theme_color": "#05070B",
+  "icons": [
+    {
+      "src": "/android-chrome-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/android-chrome-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ]
+}

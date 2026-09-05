@@ -33,6 +33,8 @@
     <!-- og:image MUST be an absolute URL → replace vayuvarta.example.com with your live domain -->
     <meta property="og:image" content="https://vayu-varta1-0.vercel.app/logo.png" />
     <meta property="og:image:alt" content="Vayu Varta logo" />
+    <meta property="og:image:width" content="512" />
+    <meta property="og:image:height" content="512" />
     <meta property="og:url" content="https://vayu-varta1-0.vercel.app/" />
     <meta property="og:locale" content="en_IN" />
     <meta property="og:locale:alternate" content="bn_IN" />
@@ -66,8 +68,12 @@
     }
     </script>
 
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="apple-touch-icon" href="/logo.png" />
+    <!-- ══ Favicon & PWA icons ══ -->
+    <link rel="icon" href="/favicon.ico" sizes="48x48" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="preconnect" href="https://cdn.meteocons.com" />
