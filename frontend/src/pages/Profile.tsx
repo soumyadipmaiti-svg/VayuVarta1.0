@@ -1,14 +1,16 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, lazy, Suspense } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import Glass from '../components/Glass';
 import { Spotlight } from '../components/ui/spotlight';
-import { SplineScene } from '../components/ui/splite';
 import { Card } from '../components/ui/card';
 import {
   LogOut, Cloud, Sun, Camera, Phone, MessageCircle,
   Shield, CheckCircle, X, Loader2, Save, Siren,
 } from 'lucide-react';
+
+// Lazy-load SplineScene — 2MB chunk only loads when Profile page mounts
+const SplineScene = lazy(() => import('../components/ui/splite').then(m => ({ default: m.SplineScene })));
 
 // ─── Profile Picture Component ─────────────────────────────────────────
 function ProfilePicture({ currentName }: { currentName: string }) {
@@ -215,10 +217,12 @@ export default function Profile() {
                 lands around 78% of the full screen width. */}
             <div className="hidden lg:block w-52 h-52 xl:w-60 xl:h-60 flex-shrink-0 relative lg:mr-[9%] xl:mr-[13%] 2xl:mr-[15%]">
               <div className="absolute inset-0 rounded-full bg-accent-500/10 blur-2xl" />
-              <SplineScene
-                scene="/scene.splinecode"
-                className="w-full h-full"
-              />
+              <Suspense fallback={<div className="w-full h-full bg-[#05070B] rounded-full" />}>
+                <SplineScene
+                  scene="/scene.splinecode"
+                  className="w-full h-full"
+                />
+              </Suspense>
             </div>
           </div>
 

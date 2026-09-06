@@ -1,9 +1,12 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, lazy, Suspense } from 'react';
 import { motion, AnimatePresence, useMotionValue, useSpring } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
-import { SplineScene } from '../components/ui/splite';
 import { Spotlight } from '../components/ui/spotlight';
 import { ArrowRight, Cloud, Sun, Wind, Sparkles, ChevronRight } from 'lucide-react';
+
+// Lazy-load SplineScene — the 2MB Spline chunk only loads when this
+// component actually mounts, not on initial page load.
+const SplineScene = lazy(() => import('../components/ui/splite').then(m => ({ default: m.SplineScene })));
 
 // ─── Loading Screen ────────────────────────────────────────────────────
 // Takes ~2.5 seconds to complete (progress += 1.0 every 25ms = 100 ticks).
@@ -488,12 +491,14 @@ export default function Auth() {
           BOTH the loading screen finishes AND the scene is loaded (or gave up
           after 3 retries). No empty half, no flicker, no spinner flash. */}
         <div className="absolute top-0 left-0 z-[1] h-full w-[55%]">
-          <SplineScene
-            scene="/scene.splinecode"
-            className="w-full h-full"
-            onLoad={handleSplineLoad}
-            onFail={handleSplineFail}
-          />
+          <Suspense fallback={<div className="w-full h-full bg-[#05070B]" />}>
+            <SplineScene
+              scene="/scene.splinecode"
+              className="w-full h-full"
+              onLoad={handleSplineLoad}
+              onFail={handleSplineFail}
+            />
+          </Suspense>
         </div>
 
         <div className="absolute inset-0 z-[2] pointer-events-none" style={{
