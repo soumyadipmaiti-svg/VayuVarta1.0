@@ -194,7 +194,29 @@ export default function Assistant() {
     );
   }, [activeConvoId]);
 
-  // ── Send message (STREAMING) ──────────────────────────────────────────
+  // ── Send message (STREAMING with batched updates) ────────────────────
+  // Token buffer + flush interval to avoid re-rendering on every single token.
+  // Without this, a 200-token reply triggers 200 state updates → jank.
+  const tokenBufferRef = useRef<string[]>([]);
+  const flushTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const fullReplyRef = useRef('');
+
+  const activeConvoIdRef = useRef(activeConvoId);
+  activeConvoIdRef.current = activeConvoId;
+
+  const flushBuffer = useCallback(() => {
+    if (tokenBufferRef.current.length === 0) return;
+    tokenBufferRef.current.splice(0); // drain buffer
+    const reply = fullReplyRef.current;
+    setConversations((prev) => prev.map((c) => {
+      if (c.id !== activeConvoIdRef.current) return c;
+      const msgs = [...c.messages];
+      const lastIdx = msgs.length - 1;
+      msgs[lastIdx] = { ...msgs[lastIdx], message: reply };
+      return { ...c, messages: msgs, updatedAt: new Date().toISOString() };
+    }));
+  }, []);
+
   const send = useCallback(async (text?: string) => {
     const q = text || input.trim();
     if (!q || !activeId) return;
@@ -215,42 +237,56 @@ export default function Assistant() {
 
     setSending(true);
     const convoId = targetConvoId!;
-    let fullReply = '';
+    fullReplyRef.current = '';
+    tokenBufferRef.current = [];
 
     // Add empty assistant message that we'll update as tokens stream in
     setConversations((prev) => prev.map((c) => c.id === convoId
       ? { ...c, messages: [...c.messages, { role: 'assistant', message: '', created_at: new Date().toISOString() }], updatedAt: new Date().toISOString() }
       : c));
 
+    // Flush buffer every 80ms — smooth enough to feel instant, fast enough
+    // to avoid 200 re-renders for a typical reply.
+    if (flushTimerRef.current) clearInterval(flushTimerRef.current);
+    flushTimerRef.current = setInterval(flushBuffer, 80);
+
     try {
-      for await (const token of api.askAIStream({ location_id: activeId, message: q })) {
-        fullReply += token;
-        // Update the last assistant message with accumulated text
-        const capturedReply = fullReply;
-        setConversations((prev) => prev.map((c) => {
-          if (c.id !== convoId) return c;
-          const msgs = [...c.messages];
-          const lastIdx = msgs.length - 1;
-          msgs[lastIdx] = { ...msgs[lastIdx], message: capturedReply };
-          return { ...c, messages: msgs, updatedAt: new Date().toISOString() };
-        }));
-      }
+      // 60s timeout — don't let a hung request freeze the UI forever
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('timeout')), 60000)
+      );
+
+      const streamPromise = (async () => {
+        for await (const token of api.askAIStream({ location_id: activeId, message: q })) {
+          fullReplyRef.current += token;
+          tokenBufferRef.current.push(token);
+        }
+      })();
+
+      await Promise.race([streamPromise, timeoutPromise]);
+
+      // Final flush to ensure everything is rendered
+      flushBuffer();
+
       // After streaming done: only speak if user sent via voice
-      if (fullReply && lastInputWasVoice.current && ttsSupported) {
-        speak(fullReply);
+      if (fullReplyRef.current && lastInputWasVoice.current && ttsSupported) {
+        speak(fullReplyRef.current);
       }
       lastInputWasVoice.current = false;
-    } catch {
-      setConversations((prev) => prev.map((c) => {
-        if (c.id !== convoId) return c;
-        const msgs = [...c.messages];
-        const lastIdx = msgs.length - 1;
-        msgs[lastIdx] = { ...msgs[lastIdx], message: 'Sorry, something went wrong. Please try again. ⛅' };
-        return { ...c, messages: msgs, updatedAt: new Date().toISOString() };
-      }));
+    } catch (err: any) {
+      const msg = err?.message === 'timeout'
+        ? 'Request timed out. Please try again. ⏰'
+        : 'Sorry, something went wrong. Please try again. ⛅';
+      fullReplyRef.current = msg;
+      flushBuffer();
+    } finally {
+      if (flushTimerRef.current) {
+        clearInterval(flushTimerRef.current);
+        flushTimerRef.current = null;
+      }
+      setSending(false);
     }
-    setSending(false);
-  }, [input, activeId, activeConvoId, readAloud, ttsSupported, speak, updateMessages]);
+  }, [input, activeId, activeConvoId, ttsSupported, speak, updateMessages]);
 
   // ── No location → Hero Landing ──────────────────────────────────────────
   if (!activeId) {
