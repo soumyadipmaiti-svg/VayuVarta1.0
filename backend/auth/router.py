@@ -191,8 +191,20 @@ def _hash_token(token: str) -> str:
 
 
 def _smtp_send_blocking(to: str, subject: str, html: str) -> bool:
-    """Blocking SMTP send (runs in a worker thread — never blocks the event loop)."""
+    """
+    Blocking email send (runs in a worker thread — never blocks the event loop).
+
+    Tries several transport strategies in order so a single blocked port or
+    DNS family can't silently kill delivery (the "no reset email" bug):
+      1. smtp.gmail.com:587 with STARTTLS (standard)
+      2. smtp.gmail.com:465 with implicit SSL (some clouds only allow 465)
+      3. Forced-IPv4 variants of the above (some hosts have no IPv6 route,
+         which manifests as "[Errno 101] Network is unreachable")
+    """
     import smtplib
+    import socket
+    import ssl
+    import time
     from email.mime.text import MIMEText
     from email.mime.multipart import MIMEMultipart
 
@@ -203,36 +215,69 @@ def _smtp_send_blocking(to: str, subject: str, html: str) -> bool:
     msg["Reply-To"] = settings.smtp_user
     msg.attach(MIMEText(html, "html"))
 
-    last_error: Exception | None = None
-    # One retry: transient network/SMTP hiccups are the #1 cause of "no email".
-    for attempt in (1, 2):
+    host = settings.smtp_host or "smtp.gmail.com"
+    user = settings.smtp_user
+    password = settings.smtp_password
+
+    def _resolve_ipv4() -> str | None:
+        """Resolve the host to a plain IPv4 address (bypasses IPv6 routing gaps)."""
         try:
-            with smtplib.SMTP(settings.smtp_host, settings.smtp_port, timeout=15) as server:
+            infos = socket.getaddrinfo(host, 25, socket.AF_INET, socket.SOCK_STREAM)
+            return infos[0][4][0]
+        except Exception:
+            return None
+
+    # (port, use_ssl, label) — tried in order.
+    strategies = [
+        (587, False, "587+STARTTLS"),
+        (465, True, "465+SSL"),
+    ]
+    if not host.replace(".", "").isdigit():
+        ipv4 = _resolve_ipv4()
+        if ipv4 and ipv4 != host:
+            strategies += [
+                (587, False, f"587+STARTTLS@IPv4({ipv4})"),
+                (465, True, f"465+SSL@IPv4({ipv4})"),
+            ]
+
+    last_error: Exception | None = None
+    for port, use_ssl, label in strategies:
+        try:
+            if use_ssl:
+                server = smtplib.SMTP_SSL(
+                    host, port, timeout=15, context=ssl.create_default_context()
+                )
+            else:
+                server = smtplib.SMTP(host, port, timeout=15)
+            with server:
                 server.ehlo()
-                server.starttls()
-                server.ehlo()
-                server.login(settings.smtp_user, settings.smtp_password)
+                if not use_ssl:
+                    server.starttls(context=ssl.create_default_context())
+                    server.ehlo()
+                server.login(user, password)
                 server.send_message(msg)
-            logger.info(f"Email sent to: {to} ({subject})")
+            logger.info(f"Email sent to: {to} via {label}")
             LAST_EMAIL_SEND.update(
-                {"ok": True, "error": None, "at": __import__("datetime").datetime.now(
-                    __import__("datetime").timezone.utc).isoformat(), "to": to}
+                {"ok": True, "error": None,
+                 "at": __import__("datetime").datetime.now(
+                     __import__("datetime").timezone.utc).isoformat(),
+                 "to": to, "via": label}
             )
             return True
         except Exception as e:  # noqa: BLE001
             last_error = e
-            logger.error(
-                f"SMTP attempt {attempt} failed for {to}: {type(e).__name__}: {e}"
+            logger.warning(
+                f"SMTP strategy {label} failed for {to}: {type(e).__name__}: {e}"
             )
-            if attempt == 1:
-                import time
-                time.sleep(1.5)  # brief backoff before retry (sync context — thread)
+            time.sleep(0.8)
+
     LAST_EMAIL_SEND.update(
         {"ok": False, "error": f"{type(last_error).__name__}: {last_error}",
          "at": __import__("datetime").datetime.now(
-             __import__("datetime").timezone.utc).isoformat(), "to": to}
+             __import__("datetime").timezone.utc).isoformat(),
+         "to": to, "via": ",".join(s[2] for s in strategies)}
     )
-    logger.error(f"SMTP send FAILED permanently for {to}: {last_error}")
+    logger.error(f"SMTP send FAILED permanently for {to} after all strategies: {last_error}")
     return False
 
 
