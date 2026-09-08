@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { api } from '../api/client';
 import { useLoc } from '../contexts/LocContext';
 import { fetchGuestWeather, fetchGuestForecast } from '../api/guestWeather';
@@ -39,35 +39,42 @@ function _formatTime(isoStr?: string): string {
 }
 
 export default function Dashboard() {
-  const { activeId, locations } = useLoc();
+  const { activeId, locations, isLiveTracking } = useLoc();
   const [weather, setWeather] = useState<any>(null);
   const [forecast, setForecast] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
+  const fetchWeather = useCallback(async (id: string, locs: any[]) => {
+    if (!id) { setLoading(false); return; }
+    const loc = locs.find((l) => (l.location_id || l.id) === id);
+    setLoading(true);
+    if (loc) {
+      const isGuest = id.startsWith('guest_') || !loc.user_location_id;
+      if (isGuest) {
+        const [w, f] = await Promise.all([
+          fetchGuestWeather(loc.latitude, loc.longitude, loc.name),
+          fetchGuestForecast(loc.latitude, loc.longitude),
+        ]);
+        setWeather(w); setForecast(f);
+      } else {
+        const [w, f] = await Promise.all([
+          api.weather(id).catch(() => null),
+          api.forecast(id, 'daily').catch(() => null),
+        ]);
+        setWeather(w); setForecast(f);
+      }
+    }
+    setLoading(false);
+  }, []);
+
+  // Fetch weather whenever the active location or its data changes.
+  // When live GPS moves the user to a new city, LocContext updates the
+  // 'Current Location' entry's coordinates — locations array changes →
+  // this effect re-fetches → the dashboard follows the user automatically.
   useEffect(() => {
     if (!activeId) { setLoading(false); return; }
-    setLoading(true);
-
-    // Check if this is a guest location (starts with 'guest_')
-    const loc = locations.find((l) => (l.location_id || l.id) === activeId);
-    const isGuest = activeId.startsWith('guest_') || !!loc;
-
-    if (isGuest && loc) {
-      // Fetch directly from Open-Meteo (no backend needed)
-      Promise.all([
-        fetchGuestWeather(loc.latitude, loc.longitude, loc.name),
-        fetchGuestForecast(loc.latitude, loc.longitude),
-      ]).then(([w, f]) => { setWeather(w); setForecast(f); })
-        .finally(() => setLoading(false));
-    } else {
-      // Logged in: fetch from backend
-      Promise.all([
-        api.weather(activeId).catch(() => null),
-        api.forecast(activeId, 'daily').catch(() => null),
-      ]).then(([w, f]) => { setWeather(w); setForecast(f); })
-        .finally(() => setLoading(false));
-    }
-  }, [activeId, locations]);
+    fetchWeather(activeId, locations);
+  }, [activeId, locations, fetchWeather]);
 
   if (loading) {
     return (
@@ -97,7 +104,6 @@ export default function Dashboard() {
   const isDay = cur?.is_day ?? true;
   const weatherCode = _getWeatherCode(cur?.condition);
 
-  // Check if this is a GPS-detected location
   const activeLoc = locations.find((l) => (l.location_id || l.id) === activeId);
   const isGPSLocation = activeLoc?.label === 'Current Location';
 
@@ -129,8 +135,12 @@ export default function Dashboard() {
               <MapPin size={16} className="flex-shrink-0" />
               <span className="truncate">{locName}</span>
               {isGPSLocation && (
-                <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-green-500/10 text-green-400 font-medium flex-shrink-0">
-                  <Satellite size={10} /> GPS
+                <span className={`inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-medium flex-shrink-0 ${
+                  isLiveTracking ? 'bg-green-500/20 text-green-400' : 'bg-green-500/10 text-green-400'
+                }`}>
+                  <Satellite size={10} />
+                  {isLiveTracking ? 'GPS · LIVE' : 'GPS'}
+                  {isLiveTracking && <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />}
                 </span>
               )}
               {cur?.localtime && (
