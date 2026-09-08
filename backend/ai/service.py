@@ -25,12 +25,14 @@ try:
     import google.generativeai as genai
     if settings.gemini_api_key and not settings.gemini_api_key.startswith("your-"):
         genai.configure(api_key=settings.gemini_api_key)
-        # Try models in order of preference — newest available first
+        # Try models in order of preference — fastest first (measured:
+        # flash-lite 1.3s vs flash 10s to first token). Old 2.0/1.5 models
+        # are gone from the API (404) so they are not candidates anymore.
         _model_candidates = [
-            settings.gemini_model,  # from .env — primary (gemini-3.5-flash)
-            "gemini-3.5-flash-lite",
-            "gemini-2.0-flash-lite",
-            "gemini-1.5-flash",
+            settings.gemini_model,  # from .env — primary (gemini-3.5-flash-lite)
+            "gemini-3.5-flash",
+            "gemini-3.1-flash-lite",
+            "gemini-3.7-flash",
         ]
         _seen: set = set()
         for _name in _model_candidates:

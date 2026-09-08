@@ -180,8 +180,8 @@ def _hash_token(token: str) -> str:
     return hashlib.sha256(token.encode()).hexdigest()
 
 
-async def _send_email(to: str, subject: str, html: str) -> bool:
-    """Send an HTML email via SMTP. Returns True on success."""
+def _smtp_send_blocking(to: str, subject: str, html: str) -> bool:
+    """Blocking SMTP send (runs in a worker thread — never blocks the event loop)."""
     import smtplib
     from email.mime.text import MIMEText
     from email.mime.multipart import MIMEMultipart
@@ -190,18 +190,37 @@ async def _send_email(to: str, subject: str, html: str) -> bool:
     msg["Subject"] = subject
     msg["From"] = f"{settings.smtp_from_name} <{settings.smtp_user}>"
     msg["To"] = to
+    msg["Reply-To"] = settings.smtp_user
     msg.attach(MIMEText(html, "html"))
 
-    try:
-        with smtplib.SMTP(settings.smtp_host, settings.smtp_port, timeout=10) as server:
-            server.starttls()
-            server.login(settings.smtp_user, settings.smtp_password)
-            server.send_message(msg)
-        logger.info(f"Email sent to: {to} ({subject})")
-        return True
-    except Exception as e:
-        logger.error(f"Failed to send email to {to}: {e}")
-        return False
+    last_error: Exception | None = None
+    # One retry: transient network/SMTP hiccups are the #1 cause of "no email".
+    for attempt in (1, 2):
+        try:
+            with smtplib.SMTP(settings.smtp_host, settings.smtp_port, timeout=15) as server:
+                server.ehlo()
+                server.starttls()
+                server.ehlo()
+                server.login(settings.smtp_user, settings.smtp_password)
+                server.send_message(msg)
+            logger.info(f"Email sent to: {to} ({subject})")
+            return True
+        except Exception as e:  # noqa: BLE001
+            last_error = e
+            logger.error(
+                f"SMTP attempt {attempt} failed for {to}: {type(e).__name__}: {e}"
+            )
+            if attempt == 1:
+                import time
+                time.sleep(1.5)  # brief backoff before retry (sync context — thread)
+    logger.error(f"SMTP send FAILED permanently for {to}: {last_error}")
+    return False
+
+
+async def _send_email(to: str, subject: str, html: str) -> bool:
+    """Send an HTML email via SMTP (off the event loop). Returns True on success."""
+    import asyncio
+    return await asyncio.to_thread(_smtp_send_blocking, to, subject, html)
 
 
 def _reset_email_html(user_name: str, reset_url: str, expire_min: int) -> str:

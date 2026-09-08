@@ -162,23 +162,34 @@ async def ask_stream(body: AskRequest, user: dict = Depends(get_current_user)):
         sentinel = object()
 
         async def drain_sync_gen():
-            """Run the sync generator in a thread and push tokens to queue."""
+            """Run the sync generator in a thread, forwarding tokens as they
+            arrive (real streaming). CRITICAL: never collect the whole reply
+            first — that turns "streaming" into a 30s silent wait."""
+            import functools
+            import logging
+
             loop = asyncio.get_event_loop()
-            def _iter():
+            iterator = iter(ask_gemini_stream(weather_ctx, history, body.message))
+            _STOP = object()
+
+            def _next_token():
+                # Catch StopIteration INSIDE the thread — raising it through
+                # run_in_executor corrupts the Future machinery.
                 try:
-                    for token in ask_gemini_stream(weather_ctx, history, body.message):
-                        # Each iteration of the sync generator may block on
-                        # Gemini's network I/O, but it runs in a thread so
-                        # the event loop stays free.
-                        yield token
-                finally:
-                    pass
+                    return next(iterator)
+                except StopIteration:
+                    return _STOP
 
             try:
-                for token in await loop.run_in_executor(None, lambda: list(_iter())):
+                while True:
+                    # Each next() runs in the thread pool: Gemini's blocking
+                    # I/O stays off the event loop, but every token is pushed
+                    # the moment it is produced.
+                    token = await loop.run_in_executor(None, _next_token)
+                    if token is _STOP:
+                        break
                     await queue.put(token)
             except Exception as e:
-                import logging
                 logging.getLogger("ai.router").error(f"Streaming error: {e}")
             finally:
                 await queue.put(sentinel)

@@ -154,4 +154,12 @@ async def root():
 
 @app.get("/health")
 async def health():
-    return {"status": "ok"}
+    """Health check — also reports email config state (no secrets) so a
+    broken forgot-password deployment is instantly visible."""
+    return {
+        "status": "ok",
+        "email_configured": bool(settings.smtp_user and settings.smtp_password),
+        "email_host": settings.smtp_host,
+        "frontend_url": settings.frontend_url,
+        "app_env": settings.app_env,
+    }
