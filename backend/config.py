@@ -29,7 +29,11 @@ class Settings(BaseSettings):
     geocoding_api_base_url: str = Field(
         "https://geocoding-api.open-meteo.com/v1", alias="GEOCODING_API_BASE_URL"
     )
-    weather_cache_ttl_seconds: int = 600  # 10 minutes
+    # 60 minutes — Open-Meteo rate-limits Render's shared egress IP (429),
+    # so successful fetches must be reused as long as possible. The stale
+    # fallback then always has recent-enough data even during a rate-limit
+    # window instead of serving 502s to new users.
+    weather_cache_ttl_seconds: int = 3600  # 60 minutes
 
     # ── Google Gemini AI ──────────────────────────────────────────────────────
     gemini_api_key: str = Field(..., alias="GEMINI_API_KEY")

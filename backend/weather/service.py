@@ -85,7 +85,7 @@ def _cache_key(params: dict) -> str:
 
 
 async def _fetch_open_meteo_forecast(
-    params: dict, timeout: float = 15.0, max_attempts: int = 4
+    params: dict, timeout: float = 15.0, max_attempts: int = 6
 ) -> dict | None:
     """
     GET /forecast from Open-Meteo with retry + exponential backoff.
@@ -115,7 +115,7 @@ async def _fetch_open_meteo_forecast(
         except Exception:
             pass
 
-    delays = [0.0, 1.0, 2.0, 4.0]  # pause before retry 1, 2, 3
+    delays = [0.0, 1.0, 2.0, 4.0, 8.0, 12.0]  # pause before retry 1..5
     last_error: Exception | None = None
 
     async def _do_fetch():
