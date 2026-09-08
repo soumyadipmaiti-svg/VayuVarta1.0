@@ -14,7 +14,7 @@ from config import settings
 from security.rate_limit import RateLimitMiddleware
 from security.headers import SecurityHeadersMiddleware
 from security.errors import register_error_handlers
-from auth.router import router as auth_router
+from auth.router import router as auth_router, email_send_status
 from weather.router import router as weather_router
 from locations.router import router as locations_router
 from ai.router import router as ai_router
@@ -154,12 +154,14 @@ async def root():
 
 @app.get("/health")
 async def health():
-    """Health check — also reports email config state (no secrets) so a
-    broken forgot-password deployment is instantly visible."""
+    """Health check — also reports email config state + the outcome of the
+    most recent SMTP send (no secrets) so a silently-failing forgot-password
+    deployment is instantly diagnosable."""
     return {
         "status": "ok",
         "email_configured": bool(settings.smtp_user and settings.smtp_password),
         "email_host": settings.smtp_host,
+        "email_last_send": email_send_status(),
         "frontend_url": settings.frontend_url,
         "app_env": settings.app_env,
     }

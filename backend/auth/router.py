@@ -167,6 +167,16 @@ async def me(user: dict = Depends(get_current_user)):
 
 # ── Password Reset ───────────────────────────────────────────────────────────
 
+# Last SMTP send outcome, surfaced on /health so a silently-failing email
+# system is instantly diagnosable without digging through logs.
+LAST_EMAIL_SEND: dict = {"ok": None, "error": None, "at": None, "to": None}
+
+
+def email_send_status() -> dict:
+    """Return a copy of the last email send outcome (for /health)."""
+    return dict(LAST_EMAIL_SEND)
+
+
 def _generate_reset_token() -> str:
     """Generate a cryptographically secure random token."""
     import secrets
@@ -204,6 +214,10 @@ def _smtp_send_blocking(to: str, subject: str, html: str) -> bool:
                 server.login(settings.smtp_user, settings.smtp_password)
                 server.send_message(msg)
             logger.info(f"Email sent to: {to} ({subject})")
+            LAST_EMAIL_SEND.update(
+                {"ok": True, "error": None, "at": __import__("datetime").datetime.now(
+                    __import__("datetime").timezone.utc).isoformat(), "to": to}
+            )
             return True
         except Exception as e:  # noqa: BLE001
             last_error = e
@@ -213,6 +227,11 @@ def _smtp_send_blocking(to: str, subject: str, html: str) -> bool:
             if attempt == 1:
                 import time
                 time.sleep(1.5)  # brief backoff before retry (sync context — thread)
+    LAST_EMAIL_SEND.update(
+        {"ok": False, "error": f"{type(last_error).__name__}: {last_error}",
+         "at": __import__("datetime").datetime.now(
+             __import__("datetime").timezone.utc).isoformat(), "to": to}
+    )
     logger.error(f"SMTP send FAILED permanently for {to}: {last_error}")
     return False
 

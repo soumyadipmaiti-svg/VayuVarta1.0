@@ -400,17 +400,33 @@ export function LocProvider({ children }: { children: ReactNode }) {
           if (gpsEntry && gpsEntry.user_location_id) {
             await api.deleteLocation(gpsEntry.location_id);
           }
-          const added = await api.addLocation({
-            name: city,
-            latitude: lat,
-            longitude: lon,
-            label: 'Current Location',
-          });
+          let newId: string | null = null;
+          try {
+            const added = await api.addLocation({
+              name: city,
+              latitude: lat,
+              longitude: lon,
+              label: 'Current Location',
+            });
+            newId = added?.location_id ?? null;
+          } catch (err: any) {
+            // 409 = this exact spot is already in the user's saved list.
+            // Reuse it instead of failing — tracking must keep working.
+            if (err?.status === 409 || String(err?.message || '').includes('already')) {
+              await reload();
+              const dup = locationsRef.current.find(
+                (l) => Math.abs(l.latitude - lat) < 0.01 && Math.abs(l.longitude - lon) < 0.01
+              );
+              newId = dup ? (dup.location_id || dup.id) : null;
+            } else {
+              throw err;
+            }
+          }
           await reload();
           // Keep the new GPS entry active so tracking + weather follow it.
-          if (added?.location_id) {
-            activeIdRef.current = added.location_id;
-            setActiveId(added.location_id);
+          if (newId) {
+            activeIdRef.current = newId;
+            setActiveId(newId);
           }
         }
         console.log(`📍 Live location updated: ${city} (moved ${Math.round(moved)} m)`);

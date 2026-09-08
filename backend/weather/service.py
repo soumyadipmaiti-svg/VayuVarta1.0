@@ -6,6 +6,7 @@ Fetches current conditions and forecasts from Open-Meteo (free, no API key) with
 import httpx
 import asyncio
 import logging
+import time
 from datetime import datetime, timezone, timedelta
 
 from config import settings
@@ -63,10 +64,28 @@ def _cache_cutoff() -> str:
     ).isoformat()
 
 
-# ── Open-Meteo fetch with retry + backoff ────────────────────────────────────
+# ── Open-Meteo fetch with retry + backoff + in-memory dedupe/cache ──────────
+
+# In-memory cache: {(lat, lon, sorted params) -> (timestamp, payload)}
+# Lets Dashboard + Forecast + VayuGPT + the alarm engine share ONE fetch per
+# location per minute instead of hammering Open-Meteo 4x in the same second
+# (the #1 cause of the 429 Too Many Requests → 502 "can't fetch weather").
+_mem_cache: dict[str, tuple[float, dict]] = {}
+MEM_CACHE_TTL_SECONDS = 60
+# In-flight dedupe: {(lat, lon, sorted params) -> asyncio.Task}
+_inflight: dict[str, asyncio.Task] = {}
+
+
+def _cache_key(params: dict) -> str:
+    """Stable cache key from the request params (dict order-independent)."""
+    return "|".join(
+        f"{k}={sorted(v) if isinstance(v, (list, tuple)) else v}"
+        for k, v in sorted(params.items())
+    )
+
 
 async def _fetch_open_meteo_forecast(
-    params: dict, timeout: float = 15.0, max_attempts: int = 3
+    params: dict, timeout: float = 15.0, max_attempts: int = 4
 ) -> dict | None:
     """
     GET /forecast from Open-Meteo with retry + exponential backoff.
@@ -75,51 +94,83 @@ async def _fetch_open_meteo_forecast(
     so Open-Meteo intermittently answers 429 Too Many Requests. Waiting a
     moment and retrying usually gets through — and if every attempt fails,
     the caller falls back to stale cache instead of erroring at the user.
+
+    Every call is also deduped in-process: if the exact same request is
+    already in flight, we await that task instead of firing a second
+    Open-Meteo request; successful results are memoized for 60s so the
+    Dashboard + Forecast + VayuGPT + alarm engine share one fetch.
     """
-    delays = [0.0, 1.0, 2.5]  # pause before retry 1 and 2
+    key = _cache_key(params)
+
+    # 1. Serve from the 60s in-memory cache (fast path — no network at all).
+    hit = _mem_cache.get(key)
+    if hit and (time.monotonic() - hit[0]) < MEM_CACHE_TTL_SECONDS:
+        return hit[1]
+
+    # 2. Reuse an in-flight request for the same params (thundering herd).
+    existing = _inflight.get(key)
+    if existing and not existing.done():
+        try:
+            return await existing
+        except Exception:
+            pass
+
+    delays = [0.0, 1.0, 2.0, 4.0]  # pause before retry 1, 2, 3
     last_error: Exception | None = None
 
-    async with httpx.AsyncClient(timeout=timeout) as client:
-        for attempt in range(max_attempts):
-            if delays[attempt]:
-                await asyncio.sleep(delays[attempt])
-            try:
-                resp = await client.get(
-                    f"{settings.weather_api_base_url}/forecast", params=params
-                )
-                if resp.status_code == 429:
-                    last_error = httpx.HTTPStatusError(
-                        "429 Too Many Requests",
-                        request=resp.request,
-                        response=resp,
+    async def _do_fetch():
+        nonlocal last_error
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            for attempt in range(max_attempts):
+                if delays[attempt]:
+                    await asyncio.sleep(delays[attempt])
+                try:
+                    resp = await client.get(
+                        f"{settings.weather_api_base_url}/forecast", params=params
                     )
+                    if resp.status_code == 429:
+                        last_error = httpx.HTTPStatusError(
+                            "429 Too Many Requests",
+                            request=resp.request,
+                            response=resp,
+                        )
+                        logger.warning(
+                            f"Open-Meteo 429 (attempt {attempt + 1}/{max_attempts}) — backing off"
+                        )
+                        continue
+                    resp.raise_for_status()
+                    data = resp.json()
+                    # Memoize the successful payload for 60s.
+                    _mem_cache[key] = (time.monotonic(), data)
+                    return data
+                except httpx.HTTPStatusError as exc:
+                    last_error = exc
+                    if exc.response.status_code >= 500:
+                        logger.warning(
+                            f"Open-Meteo {exc.response.status_code} (attempt {attempt + 1}/{max_attempts}) — retrying"
+                        )
+                        continue
+                    logger.error(f"Open-Meteo fetch failed: {exc}")
+                    return None
+                except httpx.HTTPError as exc:
+                    last_error = exc
                     logger.warning(
-                        f"Open-Meteo 429 (attempt {attempt + 1}/{max_attempts}) — backing off"
+                        f"Open-Meteo network error (attempt {attempt + 1}/{max_attempts}): {exc}"
                     )
                     continue
-                resp.raise_for_status()
-                return resp.json()
-            except httpx.HTTPStatusError as exc:
-                last_error = exc
-                if exc.response.status_code >= 500:
-                    logger.warning(
-                        f"Open-Meteo {exc.response.status_code} (attempt {attempt + 1}/{max_attempts}) — retrying"
-                    )
-                    continue
-                logger.error(f"Open-Meteo fetch failed: {exc}")
-                return None
-            except httpx.HTTPError as exc:
-                last_error = exc
-                logger.warning(
-                    f"Open-Meteo network error (attempt {attempt + 1}/{max_attempts}): {exc}"
-                )
-                continue
-            except Exception as exc:
-                logger.error(f"Unexpected error fetching Open-Meteo: {exc}")
-                return None
+                except Exception as exc:
+                    logger.error(f"Unexpected error fetching Open-Meteo: {exc}")
+                    return None
 
-    logger.error(f"Open-Meteo failed after {max_attempts} attempts: {last_error}")
-    return None
+        logger.error(f"Open-Meteo failed after {max_attempts} attempts: {last_error}")
+        return None
+
+    task = asyncio.ensure_future(_do_fetch())
+    _inflight[key] = task
+    try:
+        return await task
+    finally:
+        _inflight.pop(key, None)
 
 
 def get_stale_forecast(location_id: str, forecast_type: str) -> dict | None:
