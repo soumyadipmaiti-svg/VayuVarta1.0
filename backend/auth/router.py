@@ -332,13 +332,14 @@ async def forgot_password(body: ForgotPasswordRequest):
                 "used": False,
             }).execute()
 
-            # Send email with raw token in URL
-            ok = await _send_reset_email(email_lower, raw_token, user.get("name", "User"))
-            if not ok:
-                logger.error(
-                    f"forgot-password: SMTP send FAILED for existing user {email_lower} "
-                    f"(token row still stored). Check SMTP settings."
-                )
+            # Send email with raw token in URL — fire-and-forget background
+            # task so the user gets an instant response instead of waiting on
+            # SMTP (which can take 10-30s from a datacenter IP). Success/failure
+            # is logged by _send_reset_email._smtp_send_blocking.
+            import asyncio
+            asyncio.create_task(
+                _send_reset_email(email_lower, raw_token, user.get("name", "User"))
+            )
 
             logger.info(f"Password reset requested for: {email_lower}")
     except Exception as exc:
