@@ -117,9 +117,10 @@ async def _fetch_open_meteo_forecast(
 
     delays = [0.0, 1.0, 2.0, 4.0, 8.0, 12.0]  # pause before retry 1..5
     last_error: Exception | None = None
+    rate_limited = False
 
     async def _do_fetch():
-        nonlocal last_error
+        nonlocal last_error, rate_limited
         async with httpx.AsyncClient(timeout=timeout) as client:
             for attempt in range(max_attempts):
                 if delays[attempt]:
@@ -134,6 +135,18 @@ async def _fetch_open_meteo_forecast(
                             request=resp.request,
                             response=resp,
                         )
+                        rate_limited = True
+                        # A 429 means the shared egress IP is rate-limited —
+                        # that window lasts minutes, not seconds, so burning
+                        # the full retry ladder (~27s of user-visible lag)
+                        # before the MET fallback is pure waste. One quick
+                        # retry, then hand over to the fallback provider.
+                        if attempt >= 1:
+                            logger.warning(
+                                "Open-Meteo still 429 after quick retry — "
+                                "switching to MET Norway fallback early"
+                            )
+                            return None
                         logger.warning(
                             f"Open-Meteo 429 (attempt {attempt + 1}/{max_attempts}) — backing off"
                         )
