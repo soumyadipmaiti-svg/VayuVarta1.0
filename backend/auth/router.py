@@ -281,10 +281,80 @@ def _smtp_send_blocking(to: str, subject: str, html: str) -> bool:
     return False
 
 
+def _send_via_resend_blocking(to: str, subject: str, html: str) -> bool:
+    """
+    Send via Resend's HTTPS API (port 443 — always reachable from Render).
+
+    Optional channel: only used when RESEND_API_KEY is configured AND SMTP
+    failed. Free tier (~100 emails/day) is plenty for password resets.
+    """
+    if not settings.resend_api_key:
+        return False
+    import httpx
+    try:
+        resp = httpx.post(
+            "https://api.resend.com/emails",
+            headers={"Authorization": f"Bearer {settings.resend_api_key}"},
+            json={
+                "from": settings.resend_from or "onboarding@resend.dev",
+                "to": [to],
+                "subject": subject,
+                "html": html,
+            },
+            timeout=20,
+        )
+        if resp.status_code in (200, 201):
+            logger.info(f"Email sent via Resend HTTPS to: {to}")
+            LAST_EMAIL_SEND.update(
+                {"ok": True, "error": None,
+                 "at": __import__("datetime").datetime.now(
+                     __import__("datetime").timezone.utc).isoformat(),
+                 "to": to, "via": "resend-https"}
+            )
+            return True
+        logger.warning(
+            f"Resend API error {resp.status_code}: {resp.text[:200]}"
+        )
+    except Exception as e:  # noqa: BLE001
+        logger.warning(
+            f"Resend send failed for {to}: {type(e).__name__}: {e}"
+        )
+    return False
+
+
+# The reset token lives 5 minutes, so keep trying for ~3.5 minutes to ride
+# out Render's intermittent SMTP egress blocks (they clear within a minute
+# or two in practice).
+EMAIL_RETRY_SECONDS = 25
+EMAIL_MAX_ATTEMPTS = 9
+
+
 async def _send_email(to: str, subject: str, html: str) -> bool:
-    """Send an HTML email via SMTP (off the event loop). Returns True on success."""
+    """
+    Deliver an HTML email reliably (off the event loop).
+
+    Strategy: try SMTP (all port/DNS variants) → on failure try Resend HTTPS
+    (if configured) → repeat the whole pair on a 25s cadence until either it
+    lands or ~3.5 minutes have passed. Render's SMTP egress is flaky, so a
+    single-shot send silently loses real reset emails — this rides it out.
+    """
     import asyncio
-    return await asyncio.to_thread(_smtp_send_blocking, to, subject, html)
+    attempt = 0
+    while attempt < EMAIL_MAX_ATTEMPTS:
+        attempt += 1
+        if await asyncio.to_thread(_smtp_send_blocking, to, subject, html):
+            return True
+        if await asyncio.to_thread(_send_via_resend_blocking, to, subject, html):
+            return True
+        last_err = LAST_EMAIL_SEND.get("error") or "unknown"
+        logger.warning(
+            f"Email attempt {attempt}/{EMAIL_MAX_ATTEMPTS} failed for {to} "
+            f"({last_err}) — retrying in {EMAIL_RETRY_SECONDS}s"
+        )
+        if attempt < EMAIL_MAX_ATTEMPTS:
+            await asyncio.sleep(EMAIL_RETRY_SECONDS)
+    logger.error(f"Email delivery FAILED for {to} after {EMAIL_MAX_ATTEMPTS} attempts")
+    return False
 
 
 def _reset_email_html(user_name: str, reset_url: str, expire_min: int) -> str:

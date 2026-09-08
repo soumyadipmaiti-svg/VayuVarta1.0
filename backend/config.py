@@ -77,12 +77,25 @@ class Settings(BaseSettings):
     password_max_length: int = Field(128, alias="PASSWORD_MAX_LENGTH")
 
     # ── SMTP (Password Reset Emails) ────────────────────────────────────────
+    # Render's free tier intermittently blocks SMTP egress to Gmail (proven:
+    # sends succeed some minutes and fail with "[Errno 101] Network is
+    # unreachable" other minutes), while HTTPS always works. So when SMTP
+    # fails, emails fall back to Resend's HTTPS API (free tier: 100/day) if
+    # RESEND_API_KEY is set — making delivery effectively guaranteed.
     smtp_host: str = Field("smtp.gmail.com", alias="SMTP_HOST")
     smtp_port: int = Field(587, alias="SMTP_PORT")
     smtp_user: str = Field("", alias="SMTP_USER")        # your Gmail address
     smtp_password: str = Field("", alias="SMTP_PASSWORD")  # Gmail App Password
     smtp_from_name: str = Field("Vayu Varta", alias="SMTP_FROM_NAME")
     password_reset_expire_minutes: int = Field(5, alias="PASSWORD_RESET_EXPIRE_MINUTES")
+
+    # ── Resend (HTTPS email fallback — optional but recommended) ────────────
+    # Free at resend.com (~100 emails/day). When set, reset emails that SMTP
+    # can't deliver fall back to Resend over HTTPS (port 443), which Render's
+    # free tier never blocks. RESEND_FROM must be a verified sender (on
+    # Resend's free plan that's exactly "onboarding@resend.dev").
+    resend_api_key: str = Field("", alias="RESEND_API_KEY")
+    resend_from: str = Field("onboarding@resend.dev", alias="RESEND_FROM")
 
     # ── App ───────────────────────────────────────────────────────────────────
     # Default is the LIVE frontend so reset links never point at localhost,
